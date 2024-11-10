@@ -8,7 +8,7 @@ class UserForumBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
 class UserForumCreate(UserForumBase):
-    join_date: datetime | None = None
+    pass
 
 class UserForumResponse(UserForumBase):
     id_member: int

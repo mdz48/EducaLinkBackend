@@ -5,7 +5,7 @@ from typing import List
 from app.models.chat import Chat
 from app.schemas.chat_schema import ChatCreate, ChatResponse
 from app.shared.config.db import get_db
-from app.routes.userRouter import get_current_user
+from app.routes.user_router import get_current_user
 
 chatRoutes = APIRouter()
 

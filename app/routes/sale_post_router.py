@@ -5,7 +5,7 @@ from typing import List
 from app.models.sale_post import SalePost
 from app.schemas.sale_post_schema import SalePostCreate, SalePostResponse
 from app.shared.config.db import get_db
-from app.routes.userRouter import get_current_user
+from app.routes.user_router import get_current_user
 
 salePostRoutes = APIRouter()
 
