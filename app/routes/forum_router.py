@@ -15,16 +15,17 @@ forumRoutes = APIRouter()
 # Crear un nuevo foro
 @forumRoutes.post('/forum/', status_code=status.HTTP_201_CREATED, response_model=ForumResponse)
 async def create_forum(forum: ForumCreate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
-    if forum.privacy == GroupType.Private and not forum.password:
+    if forum.privacy == GroupType.Privado and not forum.password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La contraseña es obligatoria para foros privados"
         )
     
     db_forum = Forum(
-        **forum.model_dump(exclude={'creation_date'}),
+        **forum.model_dump(exclude={'creation_date', 'password'}),
         creation_date=datetime.now(),
-        id_user=current_user.id_user
+        id_user=current_user.id_user,
+        password=None
     )
     db.add(db_forum)
     db.commit()
@@ -81,3 +82,9 @@ async def delete_forum(forum_id: int, db: Session = Depends(get_db), current_use
 async def get_users_by_forum(forum_id: int, db: Session = Depends(get_db)):
     users = db.query(UserForum).filter(UserForum.id_forum == forum_id).all()
     return users
+
+# Funcion para obtener los foros en base a education_level
+@forumRoutes.get('/forum/education_level/{education_level}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse])
+async def get_forums_by_education_level(education_level: str, db: Session = Depends(get_db)):
+    forums = db.query(Forum).filter(Forum.education_level == education_level).all()
+    return forums

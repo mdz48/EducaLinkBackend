@@ -1,15 +1,7 @@
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum
 from app.shared.config.db import Base
-import enum
-class FileType(enum.Enum):
-    PDF = "PDF"
-    Image = "Image"
-    Document = "Document"
-    
-class EducationLevel(enum.Enum):
-    Preschool = "Preschool"
-    Primary = "Primary"
+from app.models.interfaces import FileType, EducationLevel
 
 
 class EducationalMaterial(Base):

@@ -1,10 +1,7 @@
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Boolean, Enum, Text, Numeric
 from app.shared.config.db import Base
-import enum
+from app.models.interfaces import PostStatus
 
-class PostStatus(enum.Enum):
-    Available = "Available"
-    Sold = "Sold"
 
 class SalePost(Base):
     __tablename__ = "sale_posts"

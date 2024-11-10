@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Security
+from fastapi import APIRouter, Depends, status, HTTPException, Security, UploadFile, File
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError
 import jwt
@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from app.models.Forum import Forum
 from app.shared.config.db import get_db
 from app.models.User import User
-from app.schemas.User import UserCreate, UserResponse, Token
+from app.schemas.User import TokenData, UserCreate, UserResponse, Token
 from app.models.user_forum import UserForum
 from app.schemas.user_forum_schema import UserForumCreate, UserForumResponse
 from app.shared.middlewares.security import (
@@ -21,14 +21,15 @@ from app.shared.middlewares.security import (
 )
 
 userRoutes = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
 
 # Endpoint de login
-@userRoutes.post("/token", response_model=Token)
+@userRoutes.post("/login/", response_model=Token)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
+    print(form_data.username)
     user = db.query(User).filter(User.mail == form_data.username).first()
     if not user or not verify_password(form_data.password, user.password):
         raise HTTPException(
@@ -40,7 +41,19 @@ async def login_for_access_token(
     access_token = create_access_token(
         data={"sub": user.mail}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    token_data = TokenData(
+        mail=user.mail,
+        name=user.name,
+        lastname=user.lastname,
+        education_level=user.education_level,
+        user_type=user.user_type,
+        state=user.state
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "token_data": token_data
+    }
 
 # Endpoint de registro modificado para hacer hash de la contraseña
 @userRoutes.post('/user/', status_code=status.HTTP_201_CREATED, response_model=UserResponse)
