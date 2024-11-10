@@ -16,4 +16,5 @@ class User(Base):
     education_level = Column(Enum(EducationLevel), nullable=False)
     creation_date = Column(DateTime, nullable=False)
     state = Column(Enum(State), nullable=True, default=State.Activo)
+    
     deleted = Column(Boolean, nullable=True, default=False)

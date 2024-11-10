@@ -5,7 +5,7 @@ from typing import List
 from app.models.comment import Comment
 from app.schemas.comment_schema import CommentCreate, CommentResponse
 from app.shared.config.db import get_db
-from app.routes.userRouter import get_current_user
+from app.routes.user_router import get_current_user
 
 commentRoutes = APIRouter()
 

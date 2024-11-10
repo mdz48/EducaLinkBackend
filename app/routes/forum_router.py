@@ -4,11 +4,11 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.models.Forum import Forum, GroupType
 from app.models.user_forum import UserForum
-from app.schemas.User import UserResponse
+from app.schemas.user_schema import UserResponse
 from app.schemas.forum_schema import ForumCreate, ForumResponse
 from app.schemas.user_forum_schema import UserForumResponse
 from app.shared.config.db import get_db
-from app.routes.userRouter import get_current_user
+from app.routes.user_router import get_current_user
 
 forumRoutes = APIRouter()
 
@@ -22,20 +22,25 @@ async def create_forum(forum: ForumCreate, db: Session = Depends(get_db), curren
         )
     
     db_forum = Forum(
-        **forum.model_dump(exclude={'creation_date', 'password'}),
+        **forum.model_dump(exclude={'creation_date', 'password', 'user_name'}),
         creation_date=datetime.now(),
+        user_name=current_user.name,
         id_user=current_user.id_user,
         password=None
     )
+    
     db.add(db_forum)
     db.commit()
     db.refresh(db_forum)
+    
     return db_forum
 
 # Obtener todos los foros
 @forumRoutes.get('/forum/', response_model=List[ForumResponse])
 async def get_forums(db: Session = Depends(get_db)):
     forums = db.query(Forum).all()
+    for forum in forums:
+        forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
     return forums
 
 # Obtener un foro por ID
@@ -44,6 +49,7 @@ async def get_forum(forum_id: int, db: Session = Depends(get_db)):
     forum = db.query(Forum).filter(Forum.id_forum == forum_id).first()
     if not forum:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
+    forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum_id).count()
     return forum
 
 # Actualizar un foro
@@ -87,4 +93,6 @@ async def get_users_by_forum(forum_id: int, db: Session = Depends(get_db)):
 @forumRoutes.get('/forum/education_level/{education_level}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse])
 async def get_forums_by_education_level(education_level: str, db: Session = Depends(get_db)):
     forums = db.query(Forum).filter(Forum.education_level == education_level).all()
+    for forum in forums:
+        forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
     return forums

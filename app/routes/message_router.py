@@ -6,7 +6,7 @@ from app.models.User import User
 from app.models.message import Message
 from app.schemas.message_schema import MessageCreate, MessageResponse
 from app.shared.config.db import get_db
-from app.routes.userRouter import get_current_user
+from app.routes.user_router import get_current_user
 
 messageRoutes = APIRouter()
 

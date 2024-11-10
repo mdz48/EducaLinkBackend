@@ -1,5 +1,6 @@
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Boolean, Enum, Text
 from app.shared.config.db import Base
+from sqlalchemy.orm import relationship
 from app.models.interfaces import GroupType, EducationLevel
 
 
@@ -14,6 +15,7 @@ class Forum(Base):
     # state = Column(String(255), nullable=False)
     education_level = Column(Enum(EducationLevel), nullable=False)
     privacy = Column(Enum(GroupType), nullable=False)
+    user_name = Column(String(100), nullable=False)
     id_user = Column(Integer, ForeignKey("user.id_user", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     password = Column(String(255), nullable=True, default=None)
     

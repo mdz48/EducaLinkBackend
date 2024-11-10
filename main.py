@@ -5,7 +5,7 @@ from pymongo.mongo_client import MongoClient
 from app.shared.config.mongoConnection import client
 from app.shared.config.db import engine, get_db, Base
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes.userRouter import userRoutes
+from app.routes.user_router import userRoutes
 from app.routes.employeeRouter import employeeRoutes
 from app.routes.forum_router import forumRoutes
 from app.routes.post_router import postRoutes

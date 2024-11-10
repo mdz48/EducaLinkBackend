@@ -5,7 +5,7 @@ from typing import List
 from app.models.educational_material import EducationalMaterial
 from app.schemas.educational_material_schema import EducationalMaterialCreate, EducationalMaterialResponse
 from app.shared.config.db import get_db
-from app.routes.userRouter import get_current_user
+from app.routes.user_router import get_current_user
 
 educationalMaterialRoutes = APIRouter()
 
