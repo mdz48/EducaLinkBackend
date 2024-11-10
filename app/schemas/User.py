@@ -6,17 +6,15 @@ class UserBase(BaseModel):
     name: str
     lastname: str
     mail: EmailStr 
-    user_type: str
-    rol: str
-    state: str
-    deleted: bool = False
+    user_type: str | None = "User"
+    education_level: str
+    state: str | None = "Activo"
 
     model_config = ConfigDict(from_attributes=True)
 
 # Modelo para crear usuarios (sin id_user y con password)
 class UserCreate(UserBase):
     password: str
-    creation_date: datetime | None = None
     
     
 class Token(BaseModel):

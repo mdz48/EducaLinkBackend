@@ -1,5 +1,14 @@
-from sqlalchemy import Column, DateTime, Integer, String, Boolean
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Boolean, Enum, Text
 from app.shared.config.db import Base
+import enum
+
+class EducationLevel(enum.Enum):
+    Primaria = "Primaria"
+    Preescolar = "Preescolar"
+    
+class State(enum.Enum):
+    Activo = "Activo"
+    Bloqueado = "Bloqueado" 
 
 class User(Base):
     __tablename__ = "user"
@@ -9,7 +18,7 @@ class User(Base):
     mail = Column(String(255), nullable=False)
     password = Column(String(255), nullable=False)
     user_type = Column(String(255), nullable=False)
-    rol = Column(String(255), nullable=False)
+    education_level = Column(Enum(EducationLevel), nullable=False)
     creation_date = Column(DateTime, nullable=False)
-    state = Column(String(255), nullable=False)
-    deleted = Column(Boolean, nullable=False, default=False)
+    state = Column(Enum(State), nullable=False)
+    deleted = Column(Boolean, nullable=True, default=False)

@@ -46,6 +46,7 @@ async def login_for_access_token(
 @userRoutes.post('/user/', status_code=status.HTTP_201_CREATED, response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     # Verificar si el correo ya existe
+    print(user)
     db_user = db.query(User).filter(User.mail == user.mail).first()
     if db_user:
         raise HTTPException(
@@ -96,7 +97,7 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 @userRoutes.get('/user/', response_model=List[UserResponse])
 async def get_users(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    # current_user: User = Depends(get_current_user)
 ):
     all_users = db.query(User).all()
     return all_users
