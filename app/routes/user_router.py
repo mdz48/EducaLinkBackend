@@ -11,9 +11,10 @@ from app.schemas.forum_schema import ForumResponse
 from app.schemas.post_schema import PostResponse
 from app.shared.config.db import get_db
 from app.models.User import User
-from app.schemas.user_schema import TokenData, UserCreate, UserResponse, Token
+from app.schemas.user_schema import TokenData, UserCreate, UserResponse, Token, UserLogin
 from app.models.user_forum import UserForum
 from app.schemas.user_forum_schema import UserForumCreate, UserForumResponse
+from fastapi.responses import JSONResponse
 from app.shared.middlewares.security import (
     ALGORITHM,
     SECRET_KEY,
@@ -27,36 +28,43 @@ userRoutes = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
 
 # Endpoint de login
-@userRoutes.post("/login/", response_model=Token)
+@userRoutes.post("/login/", response_model=UserResponse)
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    user: UserLogin,
     db: Session = Depends(get_db)
 ):
-    print(form_data.username)
-    user = db.query(User).filter(User.mail == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.password):
+    user_db = db.query(User).filter(User.mail == user.mail).first()
+    if not user_db or not verify_password(user.password, user_db.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Correo o contraseña incorrectos",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.mail}, expires_delta=access_token_expires
+        data={"sub": user_db.mail}, expires_delta=access_token_expires
     )
-    token_data = TokenData(
-        mail=user.mail,
-        name=user.name,
-        lastname=user.lastname,
-        education_level=user.education_level,
-        user_type=user.user_type,
-        state=user.state
-    )
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "token_data": token_data
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    # Convertir valores de Enum a string con `.value`
+    user_data = {
+        "id_user": user_db.id_user,
+        "name": user_db.name,
+        "lastname": user_db.lastname,
+        "mail": user_db.mail,
+        "background_image_url": user_db.background_image_url,
+        "profile_image_url": user_db.profile_image_url,
+        "user_type": user_db.user_type,
+        "education_level": user_db.education_level.value if user_db.education_level else None,
+        "creation_date": user_db.creation_date.isoformat(),
+        "state": user_db.state.value if user_db.state else None
     }
+
+    return JSONResponse(content=user_data, headers=headers, status_code=status.HTTP_200_OK)
+
+
 
 # Endpoint de registro modificado para hacer hash de la contraseña
 @userRoutes.post('/user/', status_code=status.HTTP_201_CREATED, response_model=UserResponse)

@@ -54,7 +54,7 @@ async def update_message(id_message: int, message: MessageCreate, db: Session = 
 # Eliminar un mensaje por ID
 @messageRoutes.delete('/message/{id_message}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_message(id_message: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
-    db_message = db.query(Message).filter(Message.id_message == id_message, Message.user_id == current_user.id_user).first()
+    db_message = db.query(Message).filter(Message.id_message == id_message).first()
     if not db_message:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
     db.delete(db_message)

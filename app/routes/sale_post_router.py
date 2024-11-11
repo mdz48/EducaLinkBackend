@@ -13,7 +13,7 @@ salePostRoutes = APIRouter()
 @salePostRoutes.post('/sale-post/', status_code=status.HTTP_201_CREATED, response_model=SalePostResponse)
 async def create_sale_post(sale_post: SalePostCreate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     db_sale_post = SalePost(
-        **sale_post.model_dump(exclude={'publication_date'}),
+        **sale_post.model_dump(exclude={'publication_date, seller_id'}),
         publication_date=datetime.now(),
         seller_id=current_user.id_user
     )

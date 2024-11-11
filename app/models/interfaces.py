@@ -23,3 +23,6 @@ class FileType(enum.Enum):
     Image = "Image"
     Document = "Document"
     
+class PostStatus(enum.Enum):
+    Disponible = "Disponible"
+    Agotado = "Agotado"

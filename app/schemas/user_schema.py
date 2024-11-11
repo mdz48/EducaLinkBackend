@@ -13,6 +13,11 @@ class UserBase(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+# Modelo para login (solo mail y password)
+class UserLogin(BaseModel):
+    mail: EmailStr
+    password: str
+
 # Modelo para crear usuarios (sin id_user y con password)
 class UserCreate(UserBase):
     password: str
@@ -26,6 +31,7 @@ class UserResponse(UserBase):
     state: str | None = "Unknown"
 
 class TokenData(BaseModel):
+    id_user : int | None = None
     mail: str | None = None
     name: str | None = None
     lastname: str | None = None

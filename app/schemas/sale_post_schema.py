@@ -6,13 +6,14 @@ class SalePostBase(BaseModel):
     description: str
     price: float
     url: str
-    publication_date: datetime
+    # publication_date: datetime
     status: str
-    seller_id: int
+    # seller_id: int
     model_config = ConfigDict(from_attributes=True)
 
 class SalePostCreate(SalePostBase):
-    publication_date: datetime | None = None
+    # publication_date: datetime | None = None
+    pass
 
 class SalePostResponse(SalePostBase):
     id_sale_post: int

@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends,status, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from pymongo.mongo_client import MongoClient
-from app.shared.config.mongoConnection import client
+# from pymongo.mongo_client import MongoClient
+# from app.shared.config.mongoConnection import client
 from app.shared.config.db import engine, get_db, Base
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.user_router import userRoutes
