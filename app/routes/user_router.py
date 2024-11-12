@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Security, UploadFile, File
+from fastapi import APIRouter, Depends, status, HTTPException, Security, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError
 import jwt
@@ -6,15 +6,11 @@ from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime, timedelta
 from app.models.Forum import Forum
-from app.models.forum_posts import ForumPosts
-from app.schemas.forum_schema import ForumResponse
-from app.schemas.post_schema import PostResponse
 from app.shared.config.db import get_db
 from app.models.User import User
-from app.schemas.user_schema import TokenData, UserCreate, UserResponse, Token, UserLogin
+from app.schemas.user_schema import UserCreate, UserResponse, Token
 from app.models.user_forum import UserForum
 from app.schemas.user_forum_schema import UserForumCreate, UserForumResponse
-from fastapi.responses import JSONResponse
 from app.shared.middlewares.security import (
     ALGORITHM,
     SECRET_KEY,
@@ -25,46 +21,40 @@ from app.shared.middlewares.security import (
 )
 
 userRoutes = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Endpoint de login
-@userRoutes.post("/login/", response_model=UserResponse)
+@userRoutes.post("/token", response_model=Token)
 async def login_for_access_token(
-    user: UserLogin,
+    response: Response,
+    form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    user_db = db.query(User).filter(User.mail == user.mail).first()
-    if not user_db or not verify_password(user.password, user_db.password):
+    user = db.query(User).filter(User.mail == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Correo o contraseña incorrectos",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user_db.mail}, expires_delta=access_token_expires
+        data={"sub": user.mail}, expires_delta=access_token_expires
     )
-
-    headers = {"Authorization": f"Bearer {access_token}"}
-
-    # Convertir valores de Enum a string con `.value`
-    user_data = {
-        "id_user": user_db.id_user,
-        "name": user_db.name,
-        "lastname": user_db.lastname,
-        "mail": user_db.mail,
-        "background_image_url": user_db.background_image_url,
-        "profile_image_url": user_db.profile_image_url,
-        "user_type": user_db.user_type,
-        "education_level": user_db.education_level.value if user_db.education_level else None,
-        "creation_date": user_db.creation_date.isoformat(),
-        "state": user_db.state.value if user_db.state else None
+    token_data = {
+        "id_user": user.id_user,
+        "mail": user.mail,
+        "name": user.name,
+        "lastname": user.lastname,
+        "education_level": user.education_level.name if user.education_level else None,
+        "user_type": user.user_type,
+        "state": user.state.name if user.state else None
     }
-
-    return JSONResponse(content=user_data, headers=headers, status_code=status.HTTP_200_OK)
-
-
+    
+    # Añadir el token al encabezado de la respuesta
+    response.headers["Authorization"] = f"Bearer {access_token}"
+    
+    return {"access_token": access_token, "token_type": "bearer", "token_data": token_data}
 
 # Endpoint de registro modificado para hacer hash de la contraseña
 @userRoutes.post('/user/', status_code=status.HTTP_201_CREATED, response_model=UserResponse)
@@ -77,7 +67,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
             status_code=400,
             detail="El correo ya está registrado"
         )
-    
+
     # Crear usuario con contraseña hasheada
     hashed_password = get_password_hash(user.password)
     db_user = User(
@@ -107,7 +97,7 @@ async def get_current_user(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    
+
     user = db.query(User).filter(User.mail == mail).first()
     if user is None:
         raise credentials_exception
@@ -139,7 +129,7 @@ async def join_forum(forum_id: int, db: Session = Depends(get_db), current_user:
     if not forum:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
     if db.query(UserForum).filter(UserForum.id_user == current_user.id_user, UserForum.id_forum == forum_id).first():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario ya pertenece al foro")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario ya pertenece al foro")
     user_forum = UserForum(
         id_user=current_user.id_user,
         id_forum=forum_id,
@@ -149,16 +139,3 @@ async def join_forum(forum_id: int, db: Session = Depends(get_db), current_user:
     db.commit()
     db.refresh(user_forum)
     return user_forum
-
-# Funcion para obtener los foros a los que pertenece un usuario
-@userRoutes.get('/user/forums/{user_id}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse])
-async def get_forums_by_user(user_id: int, db: Session = Depends(get_db)):
-    forums = db.query(Forum).filter(Forum.id_forum.in_(db.query(UserForum.id_forum).filter(UserForum.id_user == user_id))).all()
-    return forums
-
-# Funcion para obtener los posts de un usuario
-@userRoutes.get('/user/posts/{user_id}', status_code=status.HTTP_200_OK, response_model=List[PostResponse])
-async def get_posts_by_user(user_id: int, db: Session = Depends(get_db)):
-    posts = db.query(ForumPosts).filter(ForumPosts.user_id == user_id).all()
-    return posts
-
