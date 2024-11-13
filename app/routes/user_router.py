@@ -6,6 +6,9 @@ from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime, timedelta
 from app.models.Forum import Forum
+from app.models.forum_posts import ForumPosts
+from app.schemas.forum_schema import ForumResponse
+from app.schemas.post_schema import PostResponse
 from app.shared.config.db import get_db
 from app.models.User import User
 from app.schemas.user_schema import UserCreate, UserResponse, Token
@@ -139,3 +142,14 @@ async def join_forum(forum_id: int, db: Session = Depends(get_db), current_user:
     db.commit()
     db.refresh(user_forum)
     return user_forum
+
+# Funcion para obtener los foros a los que pertenece un usuario
+@userRoutes.get('/user/forums/{user_id}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse])
+async def get_forums_by_user(user_id: int, db: Session = Depends(get_db)):
+    forums = db.query(Forum).filter(Forum.id_forum.in_(db.query(UserForum.id_forum).filter(UserForum.id_user == user_id))).all()
+    return forums
+# Funcion para obtener los posts de un usuario
+@userRoutes.get('/user/posts/{user_id}', status_code=status.HTTP_200_OK, response_model=List[PostResponse])
+async def get_posts_by_user(user_id: int, db: Session = Depends(get_db)):
+    posts = db.query(ForumPosts).filter(ForumPosts.user_id == user_id).all()
+    return posts

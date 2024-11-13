@@ -5,6 +5,7 @@ from app.shared.utils.date_reformater import format_date
 
 class PostBase(BaseModel):
     content: str
+    title: str
     forum_id: int
 
     model_config = ConfigDict(from_attributes=True)

@@ -7,6 +7,7 @@ from app.models.interfaces import EducationLevel
 class ForumPosts(Base):
     __tablename__ = "forum_posts"
     id_post = Column(Integer, primary_key=True, autoincrement=True)
+    title = Column(String(100), nullable=False)
     user_name = Column(String(100), nullable=False)
     user_education_level = Column(Enum(EducationLevel), nullable=False)
     user_profile_image_url = Column(String(255), nullable=False)
