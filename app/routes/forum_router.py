@@ -90,3 +90,21 @@ async def delete_forum(forum_id: int, db: Session = Depends(get_db), current_use
     db_forum = db.query(Forum).filter(Forum.id_forum == forum_id).first()
     if not db_forum:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
+        
+    db.delete(db_forum)
+    db.commit()
+    return
+
+# Funcion para obtener todos los usuarios de un foro
+@forumRoutes.get('/forum/{forum_id}/users', status_code=status.HTTP_200_OK, response_model=List[UserForumResponse])
+async def get_users_by_forum(forum_id: int, db: Session = Depends(get_db)):
+    users = db.query(UserForum).filter(UserForum.id_forum == forum_id).all()
+    return users
+
+# Funcion para obtener los foros en base a education_level
+@forumRoutes.get('/forum/education_level/{education_level}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse])
+async def get_forums_by_education_level(education_level: str, db: Session = Depends(get_db)):
+    forums = db.query(Forum).filter(Forum.education_level == education_level).all()
+    for forum in forums:
+        forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
+    return forums
