@@ -90,7 +90,7 @@ async def delete_forum(forum_id: int, db: Session = Depends(get_db), current_use
     db_forum = db.query(Forum).filter(Forum.id_forum == forum_id).first()
     if not db_forum:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
-    
+        
     db.delete(db_forum)
     db.commit()
     return

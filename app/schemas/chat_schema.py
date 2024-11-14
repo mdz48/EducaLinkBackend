@@ -2,7 +2,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 class ChatBase(BaseModel):
-    sender_id: int
+    # sender_id: int
     receiver_id: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -14,4 +14,6 @@ class ChatResponse(ChatBase):
     id_chat: int
     sender_id: int
     receiver_id: int
+    followers_quantity: int
+    following_quantity: int
 

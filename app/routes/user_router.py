@@ -7,10 +7,11 @@ from typing import List
 from datetime import datetime, timedelta
 from app.models.Forum import Forum
 from app.models.forum_posts import ForumPosts
+from app.schemas.follower_schema import FollowerResponse
 from app.schemas.forum_schema import ForumResponse
 from app.schemas.post_schema import PostResponse
 from app.shared.config.db import get_db
-from app.models.User import User
+from app.models.User import Follower, User
 from app.schemas.user_schema import UserCreate, UserResponse, Token
 from app.models.user_forum import UserForum
 from app.schemas.user_forum_schema import UserForumCreate, UserForumResponse
@@ -136,7 +137,7 @@ async def join_forum(forum_id: int, db: Session = Depends(get_db), current_user:
     user_forum = UserForum(
         id_user=current_user.id_user,
         id_forum=forum_id,
-        join_date=datetime.now()
+        join_date=datetime.now()    
     )
     db.add(user_forum)
     db.commit()
@@ -153,3 +154,45 @@ async def get_forums_by_user(user_id: int, db: Session = Depends(get_db)):
 async def get_posts_by_user(user_id: int, db: Session = Depends(get_db)):
     posts = db.query(ForumPosts).filter(ForumPosts.user_id == user_id).all()
     return posts
+
+# Funcion para seguir a un usuario
+@userRoutes.post('/user/follow/{user_id}', status_code=status.HTTP_200_OK, response_model=FollowerResponse)
+async def follow_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    follower = db.query(Follower).filter(Follower.id_user == user_id, Follower.follower_id == current_user.id_user).first()
+    if user_id == current_user.id_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No puedes seguir a ti mismo")
+    if follower:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario ya seguido")
+    new_follower = Follower(id_user=user_id, follower_id=current_user.id_user)
+    db.add(new_follower)
+    db.commit()
+    db.refresh(new_follower)
+    return new_follower  # This return should match FollowerResponse
+
+
+
+# Funcion para obtener los seguidores de un usuario
+@userRoutes.get('/user/followers/{id_user}', status_code=status.HTTP_200_OK, response_model=List[FollowerResponse])
+async def get_followers_by_user(id_user: int, db: Session = Depends(get_db)):
+    followers = db.query(Follower).filter(Follower.id_user == id_user).all()
+    
+    return followers
+
+# Funcion para dejar de seguir a un usuario
+@userRoutes.delete('/user/unfollow/{user_id}', status_code=status.HTTP_200_OK)
+async def unfollow_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    follower = db.query(Follower).filter(Follower.id_user == user_id, Follower.follower_id == current_user.id_user).first()
+    if not follower:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario no seguido")
+    db.delete(follower)
+    db.commit()
+    return {"message": "Usuario dejado de seguir"}
+
+# Funcion para obtener los usuarios que un usuario sigue
+@userRoutes.get('/user/following/{id_user}', status_code=status.HTTP_200_OK, response_model=List[UserResponse])
+async def get_following_by_user(id_user: int, db: Session = Depends(get_db)):
+    following = db.query(Follower).filter(Follower.follower_id == id_user).all()
+    users = db.query(User).filter(User.id_user.in_(db.query(Follower.id_user).filter(Follower.follower_id == id_user))).all()
+    return users
+
+

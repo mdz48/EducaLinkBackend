@@ -55,13 +55,7 @@ async def delete_chat(id_chat: int, db: Session = Depends(get_db), current_user:
 # Obtener todos los chats de un usuario donde esta involucrado
 @chatRoutes.get('/chat/user/{id_user}', response_model=List[ChatResponse])
 async def get_chats_by_user(id_user: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
-    if current_user.id_user != id_user:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo puedes ver tus propios chats")
-
     chats = db.query(Chat).filter(
         (Chat.sender_id == id_user) | (Chat.receiver_id == id_user)
     ).all()
     return chats
-
-
-    
