@@ -20,7 +20,9 @@ async def create_forum(forum: ForumCreate, db: Session = Depends(get_db), curren
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La contraseña es obligatoria para foros privados"
         )
-    
+        
+    if db.query(Forum).filter(Forum.name == forum.name).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El nombre del foro ya existe")
     db_forum = Forum(
         **forum.model_dump(exclude={'creation_date', 'password', 'user_name'}),
         creation_date=datetime.now(),
@@ -52,6 +54,16 @@ async def get_forum(forum_id: int, db: Session = Depends(get_db)):
     forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum_id).count()
     return forum
 
+# Obtener un foro por nombre
+@forumRoutes.get('/forum/name/{name}', response_model=ForumResponse)
+async def get_forum_by_name(name: str, db: Session = Depends(get_db)):
+    forum = db.query(Forum).filter(Forum.name == name).first()
+    if not forum:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
+    forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
+    return forum
+
+
 # Actualizar un foro
 @forumRoutes.put('/forum/{forum_id}', response_model=ForumResponse)
 async def update_forum(forum_id: int, forum: ForumCreate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
@@ -78,21 +90,3 @@ async def delete_forum(forum_id: int, db: Session = Depends(get_db), current_use
     db_forum = db.query(Forum).filter(Forum.id_forum == forum_id).first()
     if not db_forum:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
-    
-    db.delete(db_forum)
-    db.commit()
-    return
-
-# Funcion para obtener todos los usuarios de un foro
-@forumRoutes.get('/forum/{forum_id}/users', status_code=status.HTTP_200_OK, response_model=List[UserForumResponse])
-async def get_users_by_forum(forum_id: int, db: Session = Depends(get_db)):
-    users = db.query(UserForum).filter(UserForum.id_forum == forum_id).all()
-    return users
-
-# Funcion para obtener los foros en base a education_level
-@forumRoutes.get('/forum/education_level/{education_level}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse])
-async def get_forums_by_education_level(education_level: str, db: Session = Depends(get_db)):
-    forums = db.query(Forum).filter(Forum.education_level == education_level).all()
-    for forum in forums:
-        forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
-    return forums
