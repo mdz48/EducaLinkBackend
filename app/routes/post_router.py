@@ -24,10 +24,11 @@ async def create_post(post: PostCreate, db: Session = Depends(get_db), current_u
     if db.query(UserForum).filter(UserForum.id_forum == post.forum_id).filter(UserForum.id_user == current_user.id_user).first() is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario no pertenece a este foro")
     db_post = ForumPosts(
-        **post.model_dump(exclude={'publication_date', 'user_id', 'user_name', 'user_profile_image_url', 'user_education_level'}),
+        **post.model_dump(exclude={'publication_date', 'user_id', 'user_name', 'user_profile_image_url', 'user_education_level', 'user_lastname'}),     
         publication_date=datetime.now(),
         user_id=current_user.id_user,
         user_name=current_user.name,
+        user_lastname=current_user.lastname,
         user_profile_image_url=current_user.profile_image_url,
         user_education_level=current_user.education_level
     )
@@ -90,4 +91,5 @@ async def delete_post(id_post: int, db: Session = Depends(get_db)):
 async def get_posts_by_forum_id(forum_id: int, db: Session = Depends(get_db)):
     posts = db.query(ForumPosts).filter(ForumPosts.forum_id == forum_id).all()
     return posts
+
 

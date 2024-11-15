@@ -14,6 +14,4 @@ class ChatResponse(ChatBase):
     id_chat: int
     sender_id: int
     receiver_id: int
-    followers_quantity: int
-    following_quantity: int
 

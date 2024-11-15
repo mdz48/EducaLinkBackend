@@ -98,6 +98,8 @@ async def delete_forum(forum_id: int, db: Session = Depends(get_db), current_use
 # Funcion para obtener todos los usuarios de un foro
 @forumRoutes.get('/forum/{forum_id}/users', status_code=status.HTTP_200_OK, response_model=List[UserForumResponse])
 async def get_users_by_forum(forum_id: int, db: Session = Depends(get_db)):
+    if not db.query(Forum).filter(Forum.id_forum == forum_id).first(): 
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
     users = db.query(UserForum).filter(UserForum.id_forum == forum_id).all()
     return users
 

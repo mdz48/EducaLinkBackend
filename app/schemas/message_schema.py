@@ -13,3 +13,4 @@ class MessageCreate(MessageBase):
 
 class MessageResponse(MessageBase):
     id_message: int
+    sender_id : int

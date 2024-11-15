@@ -9,6 +9,7 @@ class ForumPosts(Base):
     id_post = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(100), nullable=False)
     user_name = Column(String(100), nullable=False)
+    user_lastname = Column(String(100), nullable=False)
     user_education_level = Column(Enum(EducationLevel), nullable=False)
     user_profile_image_url = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)

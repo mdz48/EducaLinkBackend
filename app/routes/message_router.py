@@ -14,15 +14,17 @@ messageRoutes = APIRouter()
 @messageRoutes.post('/message/', status_code=status.HTTP_201_CREATED, response_model=MessageResponse)
 async def create_message(message: MessageCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     print(current_user.id_user or "No user")
+    if message.sender_id == current_user.id_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You can't send a message to yourself")
     db_message = Message(**message.model_dump(exclude={'date_message'}), date_message=datetime.now(), sender_id=current_user.id_user)
     db.add(db_message)
     db.commit()
     return db_message
 
 # Obtener todos los mensajes de un chat
-@messageRoutes.get('/message/{chat_id}', response_model=List[MessageResponse])
+@messageRoutes.get('/message/chat/{chat_id}', response_model=List[MessageResponse])
 async def get_messages_by_chat(chat_id: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
-    messages = db.query(Message).filter(Message.chat_id == chat_id, Message.sender_id == current_user.id_user).all()
+    messages = db.query(Message).filter(Message.chat_id == chat_id).all()
     return messages
 
 # Obtener un mensaje por ID

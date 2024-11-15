@@ -172,11 +172,20 @@ async def follow_user(user_id: int, db: Session = Depends(get_db), current_user:
 
 
 # Funcion para obtener los seguidores de un usuario
-@userRoutes.get('/user/followers/{id_user}', status_code=status.HTTP_200_OK, response_model=List[FollowerResponse])
+@userRoutes.get('/user/followers/{id_user}', status_code=status.HTTP_200_OK, response_model=List[UserResponse])
 async def get_followers_by_user(id_user: int, db: Session = Depends(get_db)):
     followers = db.query(Follower).filter(Follower.id_user == id_user).all()
-    
-    return followers
+    users = db.query(User).filter(User.id_user.in_(db.query(Follower.follower_id).filter(Follower.id_user == id_user))).all()
+    return users
+
+# Funcion para obtener los usuarios que un usuario sigue
+@userRoutes.get('/user/following/{id_user}', status_code=status.HTTP_200_OK, response_model=List[UserResponse])
+async def get_following_by_user(id_user: int, db: Session = Depends(get_db)):
+    following = db.query(Follower).filter(Follower.follower_id == id_user).all()
+    users = db.query(User).filter(User.id_user.in_(db.query(Follower.id_user).filter(Follower.follower_id == id_user))).all()
+    return users
+
+
 
 # Funcion para dejar de seguir a un usuario
 @userRoutes.delete('/user/unfollow/{user_id}', status_code=status.HTTP_200_OK)
@@ -187,12 +196,5 @@ async def unfollow_user(user_id: int, db: Session = Depends(get_db), current_use
     db.delete(follower)
     db.commit()
     return {"message": "Usuario dejado de seguir"}
-
-# Funcion para obtener los usuarios que un usuario sigue
-@userRoutes.get('/user/following/{id_user}', status_code=status.HTTP_200_OK, response_model=List[UserResponse])
-async def get_following_by_user(id_user: int, db: Session = Depends(get_db)):
-    following = db.query(Follower).filter(Follower.follower_id == id_user).all()
-    users = db.query(User).filter(User.id_user.in_(db.query(Follower.id_user).filter(Follower.follower_id == id_user))).all()
-    return users
 
 
