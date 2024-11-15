@@ -21,7 +21,7 @@ class UserLogin(BaseModel):
 # Modelo para crear usuarios (sin id_user y con password)
 class UserCreate(UserBase):
     password: str
-    
+    state : str | None = "Activo"
 
 
 # Modelo para respuestas (con id_user pero sin password)
@@ -38,6 +38,8 @@ class TokenData(BaseModel):
     education_level: str | None = None
     user_type: str | None = None
     state: str | None = None
+    profile_image_url: str | None = None
+    background_image_url: str | None = None
 
     
 class Token(BaseModel):

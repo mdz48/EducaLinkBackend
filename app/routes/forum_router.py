@@ -71,7 +71,7 @@ async def update_forum(forum_id: int, forum: ForumCreate, db: Session = Depends(
     if not db_forum:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
     
-    if forum.privacy == GroupType.Private and not forum.password:
+    if forum.privacy == GroupType.Privado and not forum.password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La contraseña es obligatoria para foros privados"

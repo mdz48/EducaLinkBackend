@@ -52,7 +52,9 @@ async def login_for_access_token(
         "lastname": user.lastname,
         "education_level": user.education_level.name if user.education_level else None,
         "user_type": user.user_type,
-        "state": user.state.name if user.state else None
+        "state": user.state.name if user.state else None,
+        "profile_image_url": user.profile_image_url,
+        "background_image_url": user.background_image_url
     }
     
     # Añadir el token al encabezado de la respuesta
@@ -152,7 +154,7 @@ async def get_forums_by_user(user_id: int, db: Session = Depends(get_db)):
 # Funcion para obtener los posts de un usuario
 @userRoutes.get('/user/posts/{user_id}', status_code=status.HTTP_200_OK, response_model=List[PostResponse])
 async def get_posts_by_user(user_id: int, db: Session = Depends(get_db)):
-    posts = db.query(ForumPosts).filter(ForumPosts.user_id == user_id).all()
+    posts = db.query(ForumPosts).join(User).all()
     return posts
 
 # Funcion para seguir a un usuario
@@ -197,4 +199,32 @@ async def unfollow_user(user_id: int, db: Session = Depends(get_db), current_use
     db.commit()
     return {"message": "Usuario dejado de seguir"}
 
-
+# Funciona para actualizar un usuario
+@userRoutes.put('/user/{user_id}', status_code=status.HTTP_200_OK, response_model=UserResponse)
+async def update_user(user_id: int, user: UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.id_user == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    # Verificar que datos se quieren actualizar
+    if user.name:
+        db_user.name = user.name
+    if user.lastname:
+        db_user.lastname = user.lastname
+    if user.mail:
+        db_user.mail = user.mail
+    if user.password:
+        db_user.password = get_password_hash(user.password)
+    if user.education_level:
+        db_user.education_level = user.education_level
+    if user.user_type:
+        db_user.user_type = user.user_type
+    if user.state:
+        db_user.state = user.state
+    if user.background_image_url:
+        db_user.background_image_url = user.background_image_url
+    if user.profile_image_url:
+        db_user.profile_image_url = user.profile_image_url
+        
+    db.commit()
+    db.refresh(db_user)
+    return db_user

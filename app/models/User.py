@@ -19,19 +19,6 @@ class User(Base):
     state = Column(Enum(State), nullable=True, default=State.Activo)
     deleted = Column(Boolean, nullable=True, default=False)
 
-    # Relationships
-    followers = relationship(
-        "Follower",
-        foreign_keys="Follower.id_user",
-        back_populates="followed_user",
-        lazy='dynamic'
-    )
-    following = relationship(
-        "Follower",
-        foreign_keys="Follower.follower_id",
-        back_populates="follower_user",
-        lazy='dynamic'
-    )
     
 class Follower(Base):
     __tablename__ = "follower"
@@ -39,6 +26,3 @@ class Follower(Base):
     id_user = Column(Integer, ForeignKey("user.id_user", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)  # User being followed
     follower_id = Column(Integer, ForeignKey("user.id_user", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)  # User who follows
 
-    # Relationships
-    followed_user = relationship("User", foreign_keys=[id_user], back_populates="followers")
-    follower_user = relationship("User", foreign_keys=[follower_id], back_populates="following")
