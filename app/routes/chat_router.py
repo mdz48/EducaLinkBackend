@@ -12,10 +12,10 @@ chatRoutes = APIRouter()
 # Crear un nuevo chat
 @chatRoutes.post('/chat/', status_code=status.HTTP_201_CREATED, response_model=ChatResponse)
 async def create_chat(chat: ChatCreate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
-    if chat.sender_id == current_user.id_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You start a chat with yourself")
+    if chat.receiver_id == current_user.id_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No puedes iniciar un chat contigo mismo")
     if db.query(Chat).filter(Chat.sender_id == current_user.id_user, Chat.receiver_id == chat.receiver_id).first():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Chat already exists")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Este chat ya existe")
     db_chat = Chat(**chat.model_dump(exclude={'sender_id'}), sender_id=current_user.id_user)
     db.add(db_chat)
     db.commit()

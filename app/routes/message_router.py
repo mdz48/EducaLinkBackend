@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.models.User import User
+from app.models.chat import Chat
 from app.models.message import Message
 from app.schemas.message_schema import MessageCreate, MessageResponse
 from app.shared.config.db import get_db
@@ -14,8 +15,9 @@ messageRoutes = APIRouter()
 @messageRoutes.post('/message/', status_code=status.HTTP_201_CREATED, response_model=MessageResponse)
 async def create_message(message: MessageCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     print(current_user.id_user or "No user")
-    if message.sender_id == current_user.id_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You can't send a message to yourself")
+    # Verificar si el chat existe
+    if not db.query(Chat).filter(Chat.id_chat == message.chat_id).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Chat no existe")
     db_message = Message(**message.model_dump(exclude={'date_message'}), date_message=datetime.now(), sender_id=current_user.id_user)
     db.add(db_message)
     db.commit()

@@ -11,7 +11,6 @@ class ChatCreate(ChatBase):
     pass
 
 class ChatResponse(ChatBase):
-    id_chat: int
     sender_id: int
-    receiver_id: int
+    id_chat: int
 
