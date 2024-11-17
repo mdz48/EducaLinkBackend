@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.models.Forum import Forum, GroupType
 from app.models.user_forum import UserForum
+from app.models.User import User
 from app.schemas.user_schema import UserResponse
 from app.schemas.forum_schema import ForumCreate, ForumResponse
 from app.schemas.user_forum_schema import UserForumResponse
@@ -43,6 +44,7 @@ async def get_forums(db: Session = Depends(get_db)):
     forums = db.query(Forum).all()
     for forum in forums:
         forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
+        forum.users = db.query(User).join(UserForum, User.id_user == UserForum.id_user).filter(UserForum.id_forum == forum.id_forum).all()
     return forums
 
 # Obtener un foro por ID
@@ -52,6 +54,7 @@ async def get_forum(forum_id: int, db: Session = Depends(get_db)):
     if not forum:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
     forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum_id).count()
+    forum.users = db.query(User).join(UserForum, User.id_user == UserForum.id_user).filter(UserForum.id_forum == forum_id).all()
     return forum
 
 # Obtener un foro por nombre
@@ -61,6 +64,7 @@ async def get_forum_by_name(name: str, db: Session = Depends(get_db)):
     if not forum:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
     forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
+    forum.users = db.query(User).join(UserForum, User.id_user == UserForum.id_user).filter(UserForum.id_forum == forum.id_forum).all()
     return forum
 
 
@@ -96,11 +100,11 @@ async def delete_forum(forum_id: int, db: Session = Depends(get_db), current_use
     return
 
 # Funcion para obtener todos los usuarios de un foro
-@forumRoutes.get('/forum/{forum_id}/users', status_code=status.HTTP_200_OK, response_model=List[UserForumResponse])
+@forumRoutes.get('/forum/{forum_id}/users', status_code=status.HTTP_200_OK, response_model=List[UserResponse])
 async def get_users_by_forum(forum_id: int, db: Session = Depends(get_db)):
     if not db.query(Forum).filter(Forum.id_forum == forum_id).first(): 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
-    users = db.query(UserForum).filter(UserForum.id_forum == forum_id).all()
+    users = db.query(User).join(UserForum, User.id_user == UserForum.id_user).filter(UserForum.id_forum == forum_id).all()
     return users
 
 # Funcion para obtener los foros en base a education_level
@@ -109,4 +113,15 @@ async def get_forums_by_education_level(education_level: str, db: Session = Depe
     forums = db.query(Forum).filter(Forum.education_level == education_level).all()
     for forum in forums:
         forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
+        forum.users = db.query(User).join(UserForum, User.id_user == UserForum.id_user).filter(UserForum.id_forum == forum.id_forum).all()
     return forums
+
+# Funcion para obtener un foro por nombre
+@forumRoutes.get('/forum/name/{name}', status_code=status.HTTP_200_OK, response_model=ForumResponse)
+async def get_forum_by_name(name: str, db: Session = Depends(get_db)):
+    forum = db.query(Forum).filter(Forum.name == name).first()
+    if not forum:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
+    forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
+    forum.users = db.query(User).join(UserForum, User.id_user == UserForum.id_user).filter(UserForum.id_forum == forum.id_forum).all()
+    return forum  

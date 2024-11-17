@@ -228,3 +228,35 @@ async def update_user(user_id: int, user: UserCreate, db: Session = Depends(get_
     db.commit()
     db.refresh(db_user)
     return db_user
+
+# Funcion para eliminar un usuario
+@userRoutes.delete('/user/{user_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(user_id: int, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.id_user == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    db.delete(db_user)
+    db.commit()
+    return
+
+# Funcion para que un usuario deje un foro
+@userRoutes.delete('/user/leave_forum/{user_id}/{forum_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def leave_forum(user_id: int, forum_id: int, db: Session = Depends(get_db)):
+    user_forum = db.query(UserForum).filter(UserForum.id_user == user_id, UserForum.id_forum == forum_id).first()
+    if not user_forum:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no pertenece al foro")
+    # Verificar que el usuario tenga al menos un foro
+    if db.query(UserForum).filter(UserForum.id_user == user_id).count() == 1:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario debe pertenecer a al menos un foro")
+    db.delete(user_forum)
+    db.commit()
+    return
+
+# Funcion para buscar usuario por nombre y apellido (si es que el usuario lo ingresó)
+@userRoutes.get('/user/search/', status_code=status.HTTP_200_OK, response_model=List[UserResponse])
+async def search_user(name: str, lastname: str = None, db: Session = Depends(get_db)):
+    query = db.query(User).filter(User.name == name)
+    if lastname:
+        query = query.filter(User.lastname == lastname)
+    users = query.all()
+    return users

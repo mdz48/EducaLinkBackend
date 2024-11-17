@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 # from pymongo.mongo_client import MongoClient
 # from app.shared.config.mongoConnection import client
+from app.routes.upload_router import uploadRoutes
 from app.shared.config.db import engine, get_db, Base
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.user_router import userRoutes
@@ -23,6 +24,7 @@ app.include_router(commentRoutes)
 app.include_router(salePostRoutes)
 app.include_router(chatRoutes)
 app.include_router(messageRoutes)
+app.include_router(uploadRoutes)
 origins = [
     "http://localhost",
     "http://localhost:8080",

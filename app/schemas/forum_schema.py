@@ -26,6 +26,6 @@ class ForumResponse(ForumBase):
     users_count: int | None = 1
     
     
-    @field_serializer('creation_date')
-    def serialize_datetime(self, creation_date: datetime):
-        return format_date(creation_date)
+    # @field_serializer('creation_date')
+    # def serialize_datetime(self, creation_date: datetime):
+    #     return format_date(creation_date)
