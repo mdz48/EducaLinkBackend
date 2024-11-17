@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 from app.models.forum_posts import ForumPosts
@@ -11,23 +11,55 @@ from app.models.comment import Comment
 from app.models.user_forum import UserForum
 from app.models.Forum import Forum
 from app.models.User import User
+import boto3
+import os
+from dotenv import load_dotenv
+import time
+
+load_dotenv()
+
+s3 = boto3.client(
+    's3',
+    aws_access_key_id=os.getenv("aws_access_key_id"),
+    aws_secret_access_key=os.getenv("aws_secret_access_key"),
+    aws_session_token=os.getenv("aws_session_token"),
+    region_name=os.getenv("AWS_REGION", "us-east-1")
+)
 
 postRoutes = APIRouter()
 
 # Crear un nuevo post
 @postRoutes.post('/post/', status_code=status.HTTP_201_CREATED, response_model=PostResponse)
-async def create_post(post: PostCreate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
-    # ... validaciones previas ...
+async def create_post(
+    content: str = Form(...),
+    title: str = Form(...),
+    forum_id: int = Form(...),
+    files: List[UploadFile] = File(None),  # Permitir archivos opcionales
+    db: Session = Depends(get_db),
+    current_user: int = Depends(get_current_user)
+):
     db_post = ForumPosts(
-        title=post.title,
-        content=post.content,
+        title=title,
+        content=content,
         publication_date=datetime.now(),
-        forum_id=post.forum_id,
+        forum_id=forum_id,
         user_id=current_user.id_user
     )
+
+    # Subir imágenes a S3 si se proporcionan
+    if files:
+        file_urls = []
+        for file in files:
+            file_key = f"{int(time.time())}_{file.filename}"
+            s3.upload_fileobj(file.file, 'educalinkbucket', file_key, ExtraArgs={'ContentType': file.content_type})
+            file_url = f"https://educalinkbucket.s3.amazonaws.com/{file_key}"
+            file_urls.append(file_url)
+        
+        db_post.image_urls = file_urls  # Asegúrate de que tu modelo tenga este campo
+
     db.add(db_post)
     db.commit()
-    db.refresh(db_post)  # Refresca el objeto para obtener los datos actualizados
+    db.refresh(db_post)
     return PostResponse(
         id_post=db_post.id_post,
         title=db_post.title,

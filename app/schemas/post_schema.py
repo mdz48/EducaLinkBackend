@@ -3,6 +3,7 @@ from pydantic import BaseModel, ConfigDict, field_serializer
 from app.models.interfaces import EducationLevel
 from app.schemas.user_schema import UserResponse
 from app.shared.utils.date_reformater import format_date
+from typing import List
 
 class PostBase(BaseModel):
     content: str
@@ -19,6 +20,7 @@ class PostResponse(PostBase):
     publication_date: datetime
     user: UserResponse
     comment_count: int | None = 0
+    image_urls: List[str] | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

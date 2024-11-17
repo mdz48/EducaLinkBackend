@@ -14,4 +14,5 @@ class ForumPosts(Base):
     user_id = Column(Integer, ForeignKey("user.id_user", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     user = relationship("User", backref="posts")
     comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
+    image_urls = Column(Text, nullable=True)
 
