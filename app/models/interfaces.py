@@ -23,3 +23,13 @@ class FileType(enum.Enum):
     Image = "Image"
     Document = "Document"
     
+class SaleType(enum.Enum):
+    Material_didactico = "Material didactico"
+    Recursos_de_clases = "Recursos de clases"
+    Libros = "Libros"
+    Jueguetes = "Jueguetes"
+    Mobiliario = "Mobiliario"
+    Decoracion = "Decoracion"
+    Electronica = "Electronica"
+    Otros = "Otros"
+    

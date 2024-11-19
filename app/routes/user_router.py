@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Security, Response
+from fastapi import APIRouter, Depends, status, HTTPException, Security, Response, File, UploadFile, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError
 import jwt
@@ -23,12 +23,15 @@ from app.shared.middlewares.security import (
     create_access_token,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
+import boto3
+import time
 
 userRoutes = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+s3 = boto3.client('s3')
 
 # Endpoint de login
-@userRoutes.post("/token", response_model=Token)
+@userRoutes.post("/token", response_model=Token, tags=["Usuarios"])
 async def login_for_access_token(
     response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -63,7 +66,7 @@ async def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer", "token_data": token_data}
 
 # Endpoint de registro modificado para hacer hash de la contraseña
-@userRoutes.post('/user/', status_code=status.HTTP_201_CREATED, response_model=UserResponse)
+@userRoutes.post('/user/', status_code=status.HTTP_201_CREATED, response_model=UserResponse, tags=["Usuarios"])
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     # Verificar si el correo ya existe
     print(user)
@@ -110,11 +113,11 @@ async def get_current_user(
     return user
 
 # Ejemplo de endpoint protegido
-@userRoutes.get("/users/me/", response_model=UserResponse)
+@userRoutes.get("/users/me/", response_model=UserResponse, tags=["Usuarios"])
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
-@userRoutes.get('/user/', response_model=List[UserResponse])
+@userRoutes.get('/user/', response_model=List[UserResponse], tags=["Usuarios"])
 async def get_users(
     db: Session = Depends(get_db),
     # current_user: User = Depends(get_current_user)
@@ -123,13 +126,13 @@ async def get_users(
     return all_users
 
 # Funcion para obtener usuario por id
-@userRoutes.get('/user/{user_id}', status_code=status.HTTP_200_OK, response_model=UserResponse)
+@userRoutes.get('/user/{user_id}', status_code=status.HTTP_200_OK, response_model=UserResponse, tags=["Usuarios"])
 async def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id_user == user_id).first()
     return user
 
 # Funcion para que el usuario se una a un foro
-@userRoutes.post('/user/join_forum/{forum_id}', status_code=status.HTTP_200_OK, response_model=UserForumResponse)
+@userRoutes.post('/user/join_forum/{forum_id}', status_code=status.HTTP_200_OK, response_model=UserForumResponse, tags=["Usuarios"])
 async def join_forum(forum_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     forum = db.query(Forum).filter(Forum.id_forum == forum_id).first()
     if not forum:
@@ -147,18 +150,14 @@ async def join_forum(forum_id: int, db: Session = Depends(get_db), current_user:
     return user_forum
 
 # Funcion para obtener los foros a los que pertenece un usuario
-@userRoutes.get('/user/forums/{user_id}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse])
+@userRoutes.get('/user/forums/{user_id}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse], tags=["Usuarios"])
 async def get_forums_by_user(user_id: int, db: Session = Depends(get_db)):
     forums = db.query(Forum).filter(Forum.id_forum.in_(db.query(UserForum.id_forum).filter(UserForum.id_user == user_id))).all()
     return forums
-# Funcion para obtener los posts de un usuario
-@userRoutes.get('/user/posts/{user_id}', status_code=status.HTTP_200_OK, response_model=List[PostResponse])
-async def get_posts_by_user(user_id: int, db: Session = Depends(get_db)):
-    posts = db.query(ForumPosts).join(User).all()
-    return posts
+
 
 # Funcion para seguir a un usuario
-@userRoutes.post('/user/follow/{user_id}', status_code=status.HTTP_200_OK, response_model=FollowerResponse)
+@userRoutes.post('/user/follow/{user_id}', status_code=status.HTTP_200_OK, response_model=FollowerResponse, tags=["Usuarios"])
 async def follow_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     follower = db.query(Follower).filter(Follower.id_user == user_id, Follower.follower_id == current_user.id_user).first()
     if user_id == current_user.id_user:
@@ -174,14 +173,14 @@ async def follow_user(user_id: int, db: Session = Depends(get_db), current_user:
 
 
 # Funcion para obtener los seguidores de un usuario
-@userRoutes.get('/user/followers/{id_user}', status_code=status.HTTP_200_OK, response_model=List[UserResponse])
+@userRoutes.get('/user/followers/{id_user}', status_code=status.HTTP_200_OK, response_model=List[UserResponse], tags=["Usuarios"])
 async def get_followers_by_user(id_user: int, db: Session = Depends(get_db)):
     followers = db.query(Follower).filter(Follower.id_user == id_user).all()
     users = db.query(User).filter(User.id_user.in_(db.query(Follower.follower_id).filter(Follower.id_user == id_user))).all()
     return users
 
 # Funcion para obtener los usuarios que un usuario sigue
-@userRoutes.get('/user/following/{id_user}', status_code=status.HTTP_200_OK, response_model=List[UserResponse])
+@userRoutes.get('/user/following/{id_user}', status_code=status.HTTP_200_OK, response_model=List[UserResponse], tags=["Usuarios"])
 async def get_following_by_user(id_user: int, db: Session = Depends(get_db)):
     following = db.query(Follower).filter(Follower.follower_id == id_user).all()
     users = db.query(User).filter(User.id_user.in_(db.query(Follower.id_user).filter(Follower.follower_id == id_user))).all()
@@ -190,7 +189,7 @@ async def get_following_by_user(id_user: int, db: Session = Depends(get_db)):
 
 
 # Funcion para dejar de seguir a un usuario
-@userRoutes.delete('/user/unfollow/{user_id}', status_code=status.HTTP_200_OK)
+@userRoutes.delete('/user/unfollow/{user_id}', status_code=status.HTTP_200_OK, tags=["Usuarios"])
 async def unfollow_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     follower = db.query(Follower).filter(Follower.id_user == user_id, Follower.follower_id == current_user.id_user).first()
     if not follower:
@@ -199,38 +198,61 @@ async def unfollow_user(user_id: int, db: Session = Depends(get_db), current_use
     db.commit()
     return {"message": "Usuario dejado de seguir"}
 
-# Funciona para actualizar un usuario
-@userRoutes.put('/user/{user_id}', status_code=status.HTTP_200_OK, response_model=UserResponse)
-async def update_user(user_id: int, user: UserCreate, db: Session = Depends(get_db)):
+# Función para actualizar un usuario
+from typing import Optional
+
+@userRoutes.put('/user/{user_id}', status_code=status.HTTP_200_OK, response_model=UserResponse, tags=["Usuarios"])
+async def update_user(
+    user_id: int,
+    name: Optional[str] = Form(None),
+    lastname: Optional[str] = Form(None),
+    mail: Optional[str] = Form(None),
+    password: Optional[str] = Form(None),
+    education_level: Optional[str] = Form(None),
+    user_type: Optional[str] = Form(None),
+    state: Optional[str] = Form(None),
+    background_image: Optional[UploadFile] = None,  # Se mantiene para subir archivos
+    profile_image: Optional[UploadFile] = None,    # Se mantiene para subir archivos
+    db: Session = Depends(get_db)
+):
     db_user = db.query(User).filter(User.id_user == user_id).first()
     if not db_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-    # Verificar que datos se quieren actualizar
-    if user.name:
-        db_user.name = user.name
-    if user.lastname:
-        db_user.lastname = user.lastname
-    if user.mail:
-        db_user.mail = user.mail
-    if user.password:
-        db_user.password = get_password_hash(user.password)
-    if user.education_level:
-        db_user.education_level = user.education_level
-    if user.user_type:
-        db_user.user_type = user.user_type
-    if user.state:
-        db_user.state = user.state
-    if user.background_image_url:
-        db_user.background_image_url = user.background_image_url
-    if user.profile_image_url:
-        db_user.profile_image_url = user.profile_image_url
-        
+
+    # Actualiza solo los campos enviados
+    if name is not None:
+        db_user.name = name
+    if lastname is not None:
+        db_user.lastname = lastname
+    if mail is not None:
+        db_user.mail = mail
+    if password:
+        db_user.password = get_password_hash(password)
+    if education_level is not None:
+        db_user.education_level = education_level
+    if user_type is not None:
+        db_user.user_type = user_type
+    if state is not None:
+        db_user.state = state
+
+    # Subir y asignar nuevas URLs de imágenes si se proporcionan
+    if background_image:
+        file_key = f"{int(time.time())}_{background_image.filename}"
+        s3.upload_fileobj(background_image.file, 'educalinkbucket', file_key, ExtraArgs={'ContentType': background_image.content_type})
+        db_user.background_image_url = f"https://educalinkbucket.s3.amazonaws.com/{file_key}"
+
+    if profile_image:
+        file_key = f"{int(time.time())}_{profile_image.filename}"
+        s3.upload_fileobj(profile_image.file, 'educalinkbucket', file_key, ExtraArgs={'ContentType': background_image.content_type})
+        db_user.profile_image_url = f"https://educalinkbucket.s3.amazonaws.com/{file_key}"
+
     db.commit()
     db.refresh(db_user)
     return db_user
 
+
 # Funcion para eliminar un usuario
-@userRoutes.delete('/user/{user_id}', status_code=status.HTTP_204_NO_CONTENT)
+@userRoutes.delete('/user/{user_id}', status_code=status.HTTP_204_NO_CONTENT, tags=["Usuarios"])
 async def delete_user(user_id: int, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.id_user == user_id).first()
     if not db_user:
@@ -240,7 +262,7 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
     return
 
 # Funcion para que un usuario deje un foro
-@userRoutes.delete('/user/leave_forum/{user_id}/{forum_id}', status_code=status.HTTP_204_NO_CONTENT)
+@userRoutes.delete('/user/leave_forum/{user_id}/{forum_id}', status_code=status.HTTP_204_NO_CONTENT, tags=["Usuarios"])
 async def leave_forum(user_id: int, forum_id: int, db: Session = Depends(get_db)):
     user_forum = db.query(UserForum).filter(UserForum.id_user == user_id, UserForum.id_forum == forum_id).first()
     if not user_forum:
@@ -253,7 +275,7 @@ async def leave_forum(user_id: int, forum_id: int, db: Session = Depends(get_db)
     return
 
 # Funcion para buscar usuario por nombre y apellido (si es que el usuario lo ingresó)
-@userRoutes.get('/user/search/', status_code=status.HTTP_200_OK, response_model=List[UserResponse])
+@userRoutes.get('/user/search/', status_code=status.HTTP_200_OK, response_model=List[UserResponse], tags=["Usuarios"])
 async def search_user(name: str, lastname: str = None, db: Session = Depends(get_db)):
     query = db.query(User).filter(User.name == name)
     if lastname:

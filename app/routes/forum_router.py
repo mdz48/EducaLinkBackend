@@ -14,7 +14,7 @@ from app.routes.user_router import get_current_user
 forumRoutes = APIRouter()
 
 # Crear un nuevo foro
-@forumRoutes.post('/forum/', status_code=status.HTTP_201_CREATED, response_model=ForumResponse)
+@forumRoutes.post('/forum/', status_code=status.HTTP_201_CREATED, response_model=ForumResponse, tags=["Foros"])
 async def create_forum(forum: ForumCreate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     if forum.privacy == GroupType.Privado and not forum.password:
         raise HTTPException(
@@ -36,10 +36,20 @@ async def create_forum(forum: ForumCreate, db: Session = Depends(get_db), curren
     db.commit()
     db.refresh(db_forum)
     
+    # Unir al usuario al foro recién creado
+    user_forum = UserForum(
+        id_user=current_user.id_user,
+        id_forum=db_forum.id_forum,
+        join_date=datetime.now()
+    )
+    db.add(user_forum)
+    db.commit()
+    db.refresh(user_forum)
+
     return db_forum
 
 # Obtener todos los foros
-@forumRoutes.get('/forum/', response_model=List[ForumResponse])
+@forumRoutes.get('/forum/', response_model=List[ForumResponse], tags=["Foros"])
 async def get_forums(db: Session = Depends(get_db)):
     forums = db.query(Forum).all()
     for forum in forums:
@@ -48,7 +58,7 @@ async def get_forums(db: Session = Depends(get_db)):
     return forums
 
 # Obtener un foro por ID
-@forumRoutes.get('/forum/{forum_id}', response_model=ForumResponse)
+@forumRoutes.get('/forum/{forum_id}', response_model=ForumResponse, tags=["Foros"])
 async def get_forum(forum_id: int, db: Session = Depends(get_db)):
     forum = db.query(Forum).filter(Forum.id_forum == forum_id).first()
     if not forum:
@@ -58,7 +68,7 @@ async def get_forum(forum_id: int, db: Session = Depends(get_db)):
     return forum
 
 # Obtener un foro por nombre
-@forumRoutes.get('/forum/name/{name}', response_model=ForumResponse)
+@forumRoutes.get('/forum/name/{name}', response_model=ForumResponse, tags=["Foros"])
 async def get_forum_by_name(name: str, db: Session = Depends(get_db)):
     forum = db.query(Forum).filter(Forum.name == name).first()
     if not forum:
@@ -69,7 +79,7 @@ async def get_forum_by_name(name: str, db: Session = Depends(get_db)):
 
 
 # Actualizar un foro
-@forumRoutes.put('/forum/{forum_id}', response_model=ForumResponse)
+@forumRoutes.put('/forum/{forum_id}', response_model=ForumResponse, tags=["Foros"])
 async def update_forum(forum_id: int, forum: ForumCreate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     db_forum = db.query(Forum).filter(Forum.id_forum == forum_id).first()
     if not db_forum:
@@ -89,7 +99,7 @@ async def update_forum(forum_id: int, forum: ForumCreate, db: Session = Depends(
     return db_forum
 
 # Eliminar un foro
-@forumRoutes.delete('/forum/{forum_id}', status_code=status.HTTP_204_NO_CONTENT)
+@forumRoutes.delete('/forum/{forum_id}', status_code=status.HTTP_204_NO_CONTENT, tags=["Foros"])
 async def delete_forum(forum_id: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     db_forum = db.query(Forum).filter(Forum.id_forum == forum_id).first()
     if not db_forum:
@@ -100,7 +110,7 @@ async def delete_forum(forum_id: int, db: Session = Depends(get_db), current_use
     return
 
 # Funcion para obtener todos los usuarios de un foro
-@forumRoutes.get('/forum/{forum_id}/users', status_code=status.HTTP_200_OK, response_model=List[UserResponse])
+@forumRoutes.get('/forum/{forum_id}/users', status_code=status.HTTP_200_OK, response_model=List[UserResponse], tags=["Foros"])
 async def get_users_by_forum(forum_id: int, db: Session = Depends(get_db)):
     if not db.query(Forum).filter(Forum.id_forum == forum_id).first(): 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
@@ -108,7 +118,7 @@ async def get_users_by_forum(forum_id: int, db: Session = Depends(get_db)):
     return users
 
 # Funcion para obtener los foros en base a education_level
-@forumRoutes.get('/forum/education_level/{education_level}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse])
+@forumRoutes.get('/forum/education_level/{education_level}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse], tags=["Foros"])
 async def get_forums_by_education_level(education_level: str, db: Session = Depends(get_db)):
     forums = db.query(Forum).filter(Forum.education_level == education_level).all()
     for forum in forums:
@@ -117,7 +127,7 @@ async def get_forums_by_education_level(education_level: str, db: Session = Depe
     return forums
 
 # Funcion para obtener un foro por nombre
-@forumRoutes.get('/forum/name/{name}', status_code=status.HTTP_200_OK, response_model=ForumResponse)
+@forumRoutes.get('/forum/name/{name}', status_code=status.HTTP_200_OK, response_model=ForumResponse, tags=["Foros"])
 async def get_forum_by_name(name: str, db: Session = Depends(get_db)):
     forum = db.query(Forum).filter(Forum.name == name).first()
     if not forum:

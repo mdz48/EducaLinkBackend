@@ -1,13 +1,14 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from typing import Optional
 
 # Modelo base con los campos comunes
 class UserBase(BaseModel):
     name: str
     lastname: str
     mail: EmailStr 
-    background_image_url: str | None = "https://drive.google.com/file/d/1CWU_gcEd4bxP4wgsggAioAqH_eSaroeu/view?usp=drive_link"
-    profile_image_url: str | None = "https://drive.google.com/file/d/1pBinSzzha4-O1bJz8PZSX1ade_me5e6L/view?usp=drive_link"
+    background_image_url: str | None = "https://educalinkbucket.s3.us-east-1.amazonaws.com/default_portrait_white.png"
+    profile_image_url: str | None = "https://educalinkbucket.s3.us-east-1.amazonaws.com/default_user.png"
     user_type: str | None = "User"
     education_level: str | None = "Preescolar"
 
@@ -19,9 +20,17 @@ class UserLogin(BaseModel):
     password: str
 
 # Modelo para crear usuarios (sin id_user y con password)
-class UserCreate(UserBase):
-    password: str
-    state : str | None = "Activo"
+class UserCreate(BaseModel):
+    name: Optional[str] = None
+    lastname: Optional[str] = None
+    mail: Optional[EmailStr] = None
+    password: Optional[str] = None
+    education_level: Optional[str] = None
+    user_type: Optional[str] = None
+    state: Optional[str] = None
+    background_image_url: Optional[str] = None
+    profile_image_url: Optional[str] = None
+
 
 
 # Modelo para respuestas (con id_user pero sin password)

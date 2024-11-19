@@ -8,8 +8,8 @@ class User(Base):
     __tablename__ = "user"
     id_user = Column(Integer, primary_key=True, autoincrement=True, index=True)
     name = Column(String(255), nullable=False)
-    background_image_url = Column(String(255), nullable=True)
-    profile_image_url = Column(String(255), nullable=True)
+    background_image_url = Column(Text, nullable=True)
+    profile_image_url = Column(Text, nullable=True)
     lastname = Column(String(255), nullable=False)
     mail = Column(String(255), nullable=False)
     password = Column(String(255), nullable=False)
@@ -18,6 +18,9 @@ class User(Base):
     creation_date = Column(DateTime, nullable=False)
     state = Column(Enum(State), nullable=True, default=State.Activo)
     deleted = Column(Boolean, nullable=True, default=False)
+
+    # Relación inversa con SalePost
+    sale_posts = relationship("SalePost", back_populates="seller")
 
     
 class Follower(Base):

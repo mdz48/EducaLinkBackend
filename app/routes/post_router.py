@@ -30,7 +30,7 @@ s3 = boto3.client(
 postRoutes = APIRouter()
 
 # Crear un nuevo post
-@postRoutes.post('/post/', status_code=status.HTTP_201_CREATED, response_model=PostResponse)
+@postRoutes.post('/post/', status_code=status.HTTP_201_CREATED, response_model=PostResponse, tags=["Posts"])
 async def create_post(
     content: str = Form(...),
     title: str = Form(...),
@@ -75,7 +75,7 @@ async def create_post(
         image_urls=[]  # Inicialmente vacío, puedes llenarlo al obtener el post
     )
 
-@postRoutes.get('/post/', response_model=List[PostResponse])
+@postRoutes.get('/post/', response_model=List[PostResponse], tags=["Posts"])
 async def get_posts(db: Session = Depends(get_db)):
     posts = db.query(ForumPosts).options(joinedload(ForumPosts.user)).all()
     
@@ -104,7 +104,7 @@ async def get_posts(db: Session = Depends(get_db)):
 
 
 # Obtener un post por ID
-@postRoutes.get('/post/{id_post}', response_model=PostResponse)
+@postRoutes.get('/post/{id_post}', response_model=PostResponse, tags=["Posts"])
 async def get_post_by_id(id_post: int, db: Session = Depends(get_db)):
     post = db.query(ForumPosts).options(joinedload(ForumPosts.user)).filter(ForumPosts.id_post == id_post).first()
     if not post:
@@ -128,7 +128,7 @@ async def get_post_by_id(id_post: int, db: Session = Depends(get_db)):
 
 
 # Actualizar un post
-@postRoutes.put('/post/{id_post}', response_model=PostResponse)
+@postRoutes.put('/post/{id_post}', response_model=PostResponse, tags=["Posts"])
 async def update_post(id_post: int, post: PostCreate, db: Session = Depends(get_db)):
     db_post = db.query(ForumPosts).filter(ForumPosts.id_post == id_post).first()
     if not db_post:
@@ -139,7 +139,7 @@ async def update_post(id_post: int, post: PostCreate, db: Session = Depends(get_
     return db_post
 
 # Eliminar un post
-@postRoutes.delete('/post/{id_post}', status_code=status.HTTP_204_NO_CONTENT)
+@postRoutes.delete('/post/{id_post}', status_code=status.HTTP_204_NO_CONTENT, tags=["Posts"])
 async def delete_post(id_post: int, db: Session = Depends(get_db)):
     db_post = db.query(ForumPosts).filter(ForumPosts.id_post == id_post).first()
     if not db_post:
@@ -148,7 +148,7 @@ async def delete_post(id_post: int, db: Session = Depends(get_db)):
     db.commit()
 
 # Obtener posts por ID de foro
-@postRoutes.get('/posts/forum/{forum_id}', response_model=List[PostResponse])
+@postRoutes.get('/posts/forum/{forum_id}', response_model=List[PostResponse], tags=["Posts"])
 async def get_posts_by_forum_id(forum_id: int, db: Session = Depends(get_db)):
     posts = db.query(ForumPosts).options(joinedload(ForumPosts.user)).filter(ForumPosts.forum_id == forum_id).all()
     result = []
@@ -172,7 +172,7 @@ async def get_posts_by_forum_id(forum_id: int, db: Session = Depends(get_db)):
     return result
 
 
-@postRoutes.get('/post/', response_model=List[PostResponse])
+@postRoutes.get('/post/', response_model=List[PostResponse], tags=["Posts"])
 async def get_posts(db: Session = Depends(get_db)):
     posts = db.query(
         ForumPosts
@@ -200,3 +200,51 @@ async def get_posts(db: Session = Depends(get_db)):
         result.append(post_response)
     return result
 
+# Obtener un post por user ID
+@postRoutes.get('/post/user/{user_id}', response_model=List[PostResponse], tags=["Posts"])
+async def get_post_by_user_id(user_id: int, db: Session = Depends(get_db)):
+    posts = db.query(ForumPosts).options(joinedload(ForumPosts.user)).filter(ForumPosts.user_id == user_id).all()
+    result = []
+    for post in posts:
+        post_response = PostResponse(
+            id_post=post.id_post,
+            title=post.title,
+            content=post.content,
+            publication_date=post.publication_date,
+            forum_id=post.forum_id,
+            user=post.user,
+            comment_count=len(post.comments)
+        )
+        result.append(post_response)
+    return result
+
+# Obtener posts filtrados por rango de fechas de publicación
+@postRoutes.get('/posts/filter', response_model=List[PostResponse], tags=["Posts"])
+async def get_posts_filtered(start_date: datetime = None, end_date: datetime = None, db: Session = Depends(get_db)):
+    query = db.query(ForumPosts).options(joinedload(ForumPosts.user))
+
+    if start_date:
+        query = query.filter(ForumPosts.publication_date >= start_date)
+    if end_date:
+        query = query.filter(ForumPosts.publication_date <= end_date)
+
+    posts = query.all()
+    
+    result = []
+    for post in posts:
+        # Obtener las URLs de los archivos asociados
+        file_urls = db.query(Files).filter(Files.post_id == post.id_post).all()
+        urls = [file.url for file in file_urls]
+
+        post_response = PostResponse(
+            id_post=post.id_post,
+            title=post.title,
+            content=post.content,
+            publication_date=post.publication_date,
+            forum_id=post.forum_id,
+            user=post.user,
+            comment_count=len(post.comments),
+            image_urls=urls  # Incluir las URLs de las imágenes
+        )
+        result.append(post_response)
+    return result

@@ -7,8 +7,8 @@ class ForumBase(BaseModel):
     name: str
     description: str
     # state: str
-    background_image_url: str | None = "https://drive.google.com/file/d/1CWU_gcEd4bxP4wgsggAioAqH_eSaroeu/view?usp=drive_link"
-    image_url: str | None = "https://drive.google.com/file/d/1GXGIlNMVwBZ7q2DwgYZawmGlof1y7Zde/view?usp=drive_link"
+    background_image_url: str | None = "https://educalinkbucket.s3.us-east-1.amazonaws.com/default_portrait_white.png"
+    image_url: str | None = "https://educalinkbucket.s3.us-east-1.amazonaws.com/default_group.png"
     education_level: str | None = 'Primaria'
     privacy: str | None = 'Publico'
     password: str | None = None 
