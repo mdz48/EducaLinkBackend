@@ -12,8 +12,10 @@ class ForumPosts(Base):
     publication_date = Column(DateTime, nullable=False)
     forum_id = Column(Integer, ForeignKey("forum.id_forum", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("user.id_user", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+    tag = Column(String(100), nullable=True)
     user = relationship("User", backref="posts")
     comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
     files = relationship("Files", back_populates="post", cascade="all, delete-orphan")
+    
 
 

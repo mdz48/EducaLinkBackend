@@ -35,6 +35,7 @@ async def create_post(
     content: str = Form(...),
     title: str = Form(...),
     forum_id: int = Form(...),
+    tag: str = Form(None),
     files: List[UploadFile] = File(None),  # Permitir archivos opcionales
     db: Session = Depends(get_db),
     current_user: int = Depends(get_current_user)
@@ -44,8 +45,10 @@ async def create_post(
         content=content,
         publication_date=datetime.now(),
         forum_id=forum_id,
-        user_id=current_user.id_user
+        user_id=current_user.id_user,
+        tag=tag
     )
+    
 
     db.add(db_post)
     db.commit()
@@ -61,9 +64,10 @@ async def create_post(
             # Guardar la URL en la tabla post_files
             db_file = Files(post_id=db_post.id_post, url=file_url)
             db.add(db_file)
-
+            
+            
     db.commit()  # Asegúrate de hacer commit después de agregar los archivos
-
+    forum = db.query(Forum).filter(Forum.id_forum == forum_id).first()
     return PostResponse(
         id_post=db_post.id_post,
         title=db_post.title,
@@ -72,7 +76,9 @@ async def create_post(
         forum_id=db_post.forum_id,
         user=db_post.user,
         comment_count=0,
-        image_urls=[]  # Inicialmente vacío, puedes llenarlo al obtener el post
+        image_urls=[],  # Inicialmente vacío, puedes llenarlo al obtener el post
+        forum=forum,
+        tag=tag
     )
 
 @postRoutes.get('/post/', response_model=List[PostResponse], tags=["Posts"])
@@ -84,21 +90,31 @@ async def get_posts(db: Session = Depends(get_db)):
         # Obtener las URLs de los archivos asociados
         file_urls = db.query(Files).filter(Files.post_id == post.id_post).all()
         urls = [file.url for file in file_urls]
-
+        
         # Cuenta el número de comentarios asociados al post
         comment_count = len(post.comments)
         
-        # Crea la respuesta del post incluyendo el usuario y las URLs de las imágenes
+        # Obtener el foro asociado al post
+        forum = db.query(Forum).filter(Forum.id_forum == post.forum_id).first()
+        
+        # Obtener los tags asociados al post
+        tag = post.tag
+        
+        # Crea la respuesta del post incluyendo el usuario, el foro y las URLs de las imágenes
         post_response = PostResponse(
-            id_post=post.id_post,
+            id_post=post.id_post, 
             title=post.title,
             content=post.content,
             publication_date=post.publication_date,
             forum_id=post.forum_id,
             user=post.user,
             comment_count=comment_count,
-            image_urls=urls  # Incluir las URLs de las imágenes
+            image_urls=urls,  # Incluir las URLs de las imágenes
+            forum=forum,
+            tag=tag
         )
+        
+        
         result.append(post_response)
     return result
 
@@ -113,7 +129,7 @@ async def get_post_by_id(id_post: int, db: Session = Depends(get_db)):
     # Obtener las URLs de los archivos asociados
     file_urls = db.query(Files).filter(Files.post_id == id_post).all()
     urls = [file.url for file in file_urls]
-
+    tag = post.tag
     post_response = PostResponse(
         id_post=post.id_post,
         title=post.title,
@@ -122,7 +138,8 @@ async def get_post_by_id(id_post: int, db: Session = Depends(get_db)):
         forum_id=post.forum_id,
         user=post.user,
         comment_count=len(post.comments),
-        image_urls=urls  # Incluir las URLs de las imágenes
+        image_urls=urls,  # Incluir las URLs de las imágenes
+        tag=tag
     )
     return post_response
 
@@ -248,3 +265,27 @@ async def get_posts_filtered(start_date: datetime = None, end_date: datetime = N
         )
         result.append(post_response)
     return result
+
+# Obtener posts filtrados por tag
+@postRoutes.get('/posts/tag/{tag}', response_model=List[PostResponse], tags=["Posts"])
+async def get_posts_by_tag(tag: str, db: Session = Depends(get_db)):
+    posts = db.query(ForumPosts).filter(ForumPosts.tag == tag).all() 
+    result = []
+    for post in posts:
+        forum = db.query(Forum).filter(Forum.id_forum == post.forum_id).first()
+        user = db.query(User).filter(User.id_user == post.user_id).first()
+        post_response = PostResponse(
+            id_post=post.id_post,
+            title=post.title,
+            content=post.content,
+            publication_date=post.publication_date,
+            forum_id=post.forum_id,
+            user=user,
+            comment_count=len(post.comments),
+            forum=forum,
+            image_urls=[],
+            tag=post.tag
+        )
+        result.append(post_response)
+    return result
+

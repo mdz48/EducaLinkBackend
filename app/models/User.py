@@ -15,6 +15,7 @@ class User(Base):
     password = Column(String(255), nullable=False)
     user_type = Column(String(255), nullable=False)
     education_level = Column(Enum(EducationLevel), nullable=False)
+    grade = Column(Integer, nullable=False)
     creation_date = Column(DateTime, nullable=False)
     state = Column(Enum(State), nullable=True, default=State.Activo)
     deleted = Column(Boolean, nullable=True, default=False)

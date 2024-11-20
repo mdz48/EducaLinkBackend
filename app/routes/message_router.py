@@ -12,7 +12,7 @@ from app.routes.user_router import get_current_user
 messageRoutes = APIRouter()
 
 # Crear un nuevo mensaje
-@messageRoutes.post('/message/', status_code=status.HTTP_201_CREATED, response_model=MessageResponse)
+@messageRoutes.post('/message/', status_code=status.HTTP_201_CREATED, response_model=MessageResponse, tags=["Mensajes"])
 async def create_message(message: MessageCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     print(current_user.id_user or "No user")
     # Verificar si el chat existe
@@ -24,13 +24,13 @@ async def create_message(message: MessageCreate, db: Session = Depends(get_db), 
     return db_message
 
 # Obtener todos los mensajes de un chat
-@messageRoutes.get('/message/chat/{chat_id}', response_model=List[MessageResponse])
+@messageRoutes.get('/message/chat/{chat_id}', response_model=List[MessageResponse], tags=["Mensajes"])
 async def get_messages_by_chat(chat_id: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     messages = db.query(Message).filter(Message.chat_id == chat_id).all()
     return messages
 
 # Obtener un mensaje por ID
-@messageRoutes.get('/message/{id_message}', response_model=MessageResponse)
+@messageRoutes.get('/message/{id_message}', response_model=MessageResponse, tags=["Mensajes"])
 async def get_message_by_id(id_message: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     message = db.query(Message).filter(Message.id_message == id_message, Message.user_id == current_user.id_user).first()
     if not message:
@@ -38,7 +38,7 @@ async def get_message_by_id(id_message: int, db: Session = Depends(get_db), curr
     return message
 
 # Actualizar un mensaje por ID
-@messageRoutes.put('/message/{id_message}', response_model=MessageResponse)
+@messageRoutes.put('/message/{id_message}', response_model=MessageResponse, tags=["Mensajes"])
 async def update_message(id_message: int, message: MessageCreate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     db_message = db.query(Message).filter(Message.id_message == id_message, Message.sender_id == current_user.id_user).first()
     if not db_message:
@@ -56,7 +56,7 @@ async def update_message(id_message: int, message: MessageCreate, db: Session = 
     return db_message
 
 # Eliminar un mensaje por ID
-@messageRoutes.delete('/message/{id_message}', status_code=status.HTTP_204_NO_CONTENT)
+@messageRoutes.delete('/message/{id_message}', status_code=status.HTTP_204_NO_CONTENT, tags=["Mensajes"])
 async def delete_message(id_message: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     db_message = db.query(Message).filter(Message.id_message == id_message).first()
     if not db_message:

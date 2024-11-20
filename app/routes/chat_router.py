@@ -10,7 +10,7 @@ from app.routes.user_router import get_current_user
 chatRoutes = APIRouter()
 
 # Crear un nuevo chat
-@chatRoutes.post('/chat/', status_code=status.HTTP_201_CREATED, response_model=ChatResponse)
+@chatRoutes.post('/chat/', status_code=status.HTTP_201_CREATED, response_model=ChatResponse, tags=["Chats"])
 async def create_chat(chat: ChatCreate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     if chat.receiver_id == current_user.id_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No puedes iniciar un chat contigo mismo")
@@ -22,13 +22,13 @@ async def create_chat(chat: ChatCreate, db: Session = Depends(get_db), current_u
     return db_chat
 
 # Obtener todos los chats
-@chatRoutes.get('/chat/', response_model=List[ChatResponse])
+@chatRoutes.get('/chat/', response_model=List[ChatResponse], tags=["Chats"])
 async def get_all_chats(db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     chats = db.query(Chat).filter(Chat.sender_id == current_user.id_user).all()
     return chats
 
 # Obtener un chat por ID
-@chatRoutes.get('/chat/{id_chat}', response_model=ChatResponse)
+@chatRoutes.get('/chat/{id_chat}', response_model=ChatResponse, tags=["Chats"])
 async def get_chat_by_id(id_chat: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     chat = db.query(Chat).filter(Chat.id_chat == id_chat, Chat.sender_id == current_user.id_user).first()
     if not chat:
@@ -36,7 +36,7 @@ async def get_chat_by_id(id_chat: int, db: Session = Depends(get_db), current_us
     return chat
 
 # Actualizar un chat por ID
-@chatRoutes.put('/chat/{id_chat}', response_model=ChatResponse)
+@chatRoutes.put('/chat/{id_chat}', response_model=ChatResponse, tags=["Chats"])
 async def update_chat(id_chat: int, chat: ChatCreate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     db_chat = db.query(Chat).filter(Chat.id_chat == id_chat, Chat.sender_id == current_user.id_user).first()
     if not db_chat:
@@ -46,7 +46,7 @@ async def update_chat(id_chat: int, chat: ChatCreate, db: Session = Depends(get_
     return db_chat
 
 # Eliminar un chat por ID
-@chatRoutes.delete('/chat/{id_chat}', status_code=status.HTTP_204_NO_CONTENT)
+@chatRoutes.delete('/chat/{id_chat}', status_code=status.HTTP_204_NO_CONTENT, tags=["Chats"])
 async def delete_chat(id_chat: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     db_chat = db.query(Chat).filter(Chat.id_chat == id_chat, Chat.sender_id == current_user.id_user).first()
     if not db_chat:
@@ -55,7 +55,7 @@ async def delete_chat(id_chat: int, db: Session = Depends(get_db), current_user:
     db.commit()
     
 # Obtener todos los chats de un usuario donde esta involucrado
-@chatRoutes.get('/chat/user/{id_user}', response_model=List[ChatResponse])
+@chatRoutes.get('/chat/user/{id_user}', response_model=List[ChatResponse], tags=["Chats"])
 async def get_chats_by_user(id_user: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     chats = db.query(Chat).filter(
         (Chat.sender_id == id_user) | (Chat.receiver_id == id_user)

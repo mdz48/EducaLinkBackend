@@ -282,3 +282,4 @@ async def search_user(name: str, lastname: str = None, db: Session = Depends(get
         query = query.filter(User.lastname == lastname)
     users = query.all()
     return users
+ 

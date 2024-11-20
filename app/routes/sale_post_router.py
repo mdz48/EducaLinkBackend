@@ -26,7 +26,7 @@ s3 = boto3.client(
 salePostRoutes = APIRouter()
 
 # Crear un nuevo post de venta
-@salePostRoutes.post('/sale-post/', status_code=status.HTTP_201_CREATED, response_model=SalePostResponse)
+@salePostRoutes.post('/sale-post/', status_code=status.HTTP_201_CREATED, response_model=SalePostResponse, tags=["Posts de venta"])
 async def create_sale_post(
     title: str = Form(...),
     description: str = Form(...),
@@ -77,14 +77,14 @@ async def create_sale_post(
     )
 
 # Obtener todos los posts de venta
-@salePostRoutes.get('/sale-post/', response_model=List[SalePostResponse])
+@salePostRoutes.get('/sale-post/', response_model=List[SalePostResponse], tags=["Posts de venta"])
 async def get_all_sale_posts(db: Session = Depends(get_db)):
     # Obtener al usuario de la venta
     sale_posts = db.query(SalePost).options(joinedload(SalePost.seller)).all()
     return sale_posts
 
 # Obtener un post de venta por su ID
-@salePostRoutes.get('/sale-post/{id_sale_post}', response_model=SalePostResponse)
+@salePostRoutes.get('/sale-post/{id_sale_post}', response_model=SalePostResponse, tags=["Posts de venta"])
 async def get_sale_post_by_id(id_sale_post: int, db: Session = Depends(get_db)):
     sale_post = db.query(SalePost).filter(SalePost.id_sale_post == id_sale_post).first()
     if not sale_post:
@@ -101,7 +101,7 @@ async def get_sale_post_by_id(id_sale_post: int, db: Session = Depends(get_db)):
     )
 
 # Actualizar un post de venta
-@salePostRoutes.put('/sale-post/{id_sale_post}', response_model=SalePostResponse)
+@salePostRoutes.put('/sale-post/{id_sale_post}', response_model=SalePostResponse, tags=["Posts de venta"])
 async def update_sale_post(id_sale_post: int, sale_post: SalePostCreate, db: Session = Depends(get_db)):
     db_sale_post = db.query(SalePost).filter(SalePost.id_sale_post == id_sale_post).first()
     if not db_sale_post:
@@ -111,7 +111,7 @@ async def update_sale_post(id_sale_post: int, sale_post: SalePostCreate, db: Ses
     return db_sale_post
 
 # Eliminar un post de venta
-@salePostRoutes.delete('/sale-post/{id_sale_post}', status_code=status.HTTP_204_NO_CONTENT)
+@salePostRoutes.delete('/sale-post/{id_sale_post}', status_code=status.HTTP_204_NO_CONTENT, tags=["Posts de venta"])
 async def delete_sale_post(id_sale_post: int, db: Session = Depends(get_db)):
     db_sale_post = db.query(SalePost).filter(SalePost.id_sale_post == id_sale_post).first()
     if not db_sale_post:
@@ -120,7 +120,7 @@ async def delete_sale_post(id_sale_post: int, db: Session = Depends(get_db)):
     db.commit()
     
 # Obtener post por su tipo 
-@salePostRoutes.get('/sale-post/type/{sale_type}', response_model=List[SalePostResponse])
+@salePostRoutes.get('/sale-post/type/{sale_type}', response_model=List[SalePostResponse], tags=["Posts de venta"])
 async def get_sale_post_by_type(sale_type: str, db: Session = Depends(get_db)):
     sale_posts = db.query(SalePost).filter(SalePost.sale_type == sale_type).all()
     return [
