@@ -57,7 +57,8 @@ async def login_for_access_token(
         "user_type": user.user_type,
         "state": user.state.name if user.state else None,
         "profile_image_url": user.profile_image_url,
-        "background_image_url": user.background_image_url
+        "background_image_url": user.background_image_url,
+        "grade": user.grade
     }
     
     # Añadir el token al encabezado de la respuesta
@@ -211,6 +212,7 @@ async def update_user(
     education_level: Optional[str] = Form(None),
     user_type: Optional[str] = Form(None),
     state: Optional[str] = Form(None),
+    grade: Optional[int] = Form(None),
     background_image: Optional[UploadFile] = None,  # Se mantiene para subir archivos
     profile_image: Optional[UploadFile] = None,    # Se mantiene para subir archivos
     db: Session = Depends(get_db)
@@ -234,6 +236,8 @@ async def update_user(
         db_user.user_type = user_type
     if state is not None:
         db_user.state = state
+    if grade is not None:
+        db_user.grade = grade
 
     # Subir y asignar nuevas URLs de imágenes si se proporcionan
     if background_image:

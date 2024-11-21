@@ -208,3 +208,31 @@ async def get_forums_by_grade_and_education_level(grade: int, education_level: s
         forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
         forum.creator = db.query(User).filter(User.id_user == forum.id_user).first()
     return forums
+
+# Funcion para obtener los foros en los que el usuario no pertenece y ademas esta filtrado por grade y education_level
+@forumRoutes.get('/forum/user/{user_id}/not_in/{grade}/{education_level}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse], tags=["Foros"])
+async def get_forums_by_user_not_in_grade_and_education_level(user_id: int, grade: int, education_level: str, db: Session = Depends(get_db)):
+    forums = db.query(Forum).filter(Forum.grade == grade, Forum.education_level == education_level, Forum.id_forum.notin_(db.query(UserForum.id_forum).filter(UserForum.id_user == user_id))).all()
+    for forum in forums:
+        forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
+        forum.creator = db.query(User).filter(User.id_user == forum.id_user).first()
+    return forums
+
+# Funcion para obtener los foros en los que el usuario no pertenece y ademas esta filtrado education_level
+@forumRoutes.get('/forum/user/{user_id}/not_in/{education_level}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse], tags=["Foros"])
+async def get_forums_by_user_not_in_education_level(user_id: int, education_level: str, db: Session = Depends(get_db)):
+    forums = db.query(Forum).filter(Forum.education_level == education_level, Forum.id_forum.notin_(db.query(UserForum.id_forum).filter(UserForum.id_user == user_id))).all()
+    for forum in forums:
+        forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
+        forum.creator = db.query(User).filter(User.id_user == forum.id_user).first()
+    return forums
+
+# Funcion para obtener los foros en los que el usuario no pertenece 
+@forumRoutes.get('/forum/user/{user_id}/not_in', status_code=status.HTTP_200_OK, response_model=List[ForumResponse], tags=["Foros"])
+async def get_forums_by_user_not_in(user_id: int, db: Session = Depends(get_db)):
+    forums = db.query(Forum).filter(Forum.id_forum.notin_(db.query(UserForum.id_forum).filter(UserForum.id_user == user_id))).all()
+    for forum in forums:
+        forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
+        forum.creator = db.query(User).filter(User.id_user == forum.id_user).first()
+    return forums
+

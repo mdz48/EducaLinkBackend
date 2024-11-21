@@ -174,7 +174,8 @@ async def get_posts_by_forum_id(forum_id: int, db: Session = Depends(get_db)):
         # Obtener las URLs de los archivos asociados
         file_urls = db.query(Files).filter(Files.post_id == post.id_post).all()
         urls = [file.url for file in file_urls]
-
+        forum = db.query(Forum).filter(Forum.id_forum == post.forum_id).first()
+        tag = post.tag
         post_response = PostResponse(
             id_post=post.id_post,
             title=post.title,
@@ -183,7 +184,9 @@ async def get_posts_by_forum_id(forum_id: int, db: Session = Depends(get_db)):
             forum_id=post.forum_id,
             user=post.user,
             comment_count=len(post.comments),
-            image_urls=urls  # Incluir las URLs de las imágenes
+            image_urls=urls,  # Incluir las URLs de las imágenes
+            forum=forum,
+            tag=tag
         )
         result.append(post_response)
     return result
@@ -204,6 +207,8 @@ async def get_posts(db: Session = Depends(get_db)):
     
     result = []
     for post in posts:
+        forum = db.query(Forum).filter(Forum.id_forum == post.forum_id).first()
+        tag = post.tag
         comment_count = len(post.comments)
         post_response = PostResponse(
             id_post=post.id_post,
@@ -212,7 +217,9 @@ async def get_posts(db: Session = Depends(get_db)):
             publication_date=post.publication_date,
             forum_id=post.forum_id,
             user=post.user,  # Aquí asignamos el objeto User directamente
-            comment_count=comment_count
+            comment_count=comment_count,
+            forum=forum,
+            tag=tag
         )
         result.append(post_response)
     return result
@@ -223,6 +230,8 @@ async def get_post_by_user_id(user_id: int, db: Session = Depends(get_db)):
     posts = db.query(ForumPosts).options(joinedload(ForumPosts.user)).filter(ForumPosts.user_id == user_id).all()
     result = []
     for post in posts:
+        forum = db.query(Forum).filter(Forum.id_forum == post.forum_id).first()  # Obtener el foro
+        tag = post.tag
         post_response = PostResponse(
             id_post=post.id_post,
             title=post.title,
@@ -230,7 +239,10 @@ async def get_post_by_user_id(user_id: int, db: Session = Depends(get_db)):
             publication_date=post.publication_date,
             forum_id=post.forum_id,
             user=post.user,
-            comment_count=len(post.comments)
+            comment_count=len(post.comments),
+            forum=forum,  # Asegúrate de incluir el foro aquí
+            image_urls=[],  # O cualquier otra lógica que necesites
+            tag=tag
         )
         result.append(post_response)
     return result
@@ -252,7 +264,8 @@ async def get_posts_filtered(start_date: datetime = None, end_date: datetime = N
         # Obtener las URLs de los archivos asociados
         file_urls = db.query(Files).filter(Files.post_id == post.id_post).all()
         urls = [file.url for file in file_urls]
-
+        forum = db.query(Forum).filter(Forum.id_forum == post.forum_id).first()
+        tag = post.tag
         post_response = PostResponse(
             id_post=post.id_post,
             title=post.title,
@@ -261,7 +274,9 @@ async def get_posts_filtered(start_date: datetime = None, end_date: datetime = N
             forum_id=post.forum_id,
             user=post.user,
             comment_count=len(post.comments),
-            image_urls=urls  # Incluir las URLs de las imágenes
+            image_urls=urls,  # Incluir las URLs de las imágenes
+            forum=forum,
+            tag=tag
         )
         result.append(post_response)
     return result
@@ -274,6 +289,7 @@ async def get_posts_by_tag(tag: str, db: Session = Depends(get_db)):
     for post in posts:
         forum = db.query(Forum).filter(Forum.id_forum == post.forum_id).first()
         user = db.query(User).filter(User.id_user == post.user_id).first()
+        tag = post.tag
         post_response = PostResponse(
             id_post=post.id_post,
             title=post.title,
@@ -284,8 +300,79 @@ async def get_posts_by_tag(tag: str, db: Session = Depends(get_db)):
             comment_count=len(post.comments),
             forum=forum,
             image_urls=[],
-            tag=post.tag
+            tag=tag
         )
         result.append(post_response)
     return result
 
+# Obtener los posts de un usuario donde el grupo sea publico
+@postRoutes.get('/post/user/{user_id}/public', response_model=List[PostResponse], tags=["Posts"])
+async def get_posts_by_user_id_public(user_id: int, db: Session = Depends(get_db)):
+    posts = db.query(ForumPosts).filter(ForumPosts.user_id == user_id, ForumPosts.forum_id.in_(db.query(Forum.id_forum).filter(Forum.privacy == "Publico"))).all()
+    result = []
+    for post in posts:
+        forum = db.query(Forum).filter(Forum.id_forum == post.forum_id).first()
+        user = db.query(User).filter(User.id_user == post.user_id).first()
+        tag = post.tag
+        post_response = PostResponse(
+            id_post=post.id_post,
+            title=post.title,
+            content=post.content,
+            forum_id=post.forum_id,
+            publication_date=post.publication_date,
+            user=user,
+            comment_count=len(post.comments),
+            forum=forum,
+            image_urls=[],
+            tag=tag
+        )
+        result.append(post_response)
+    return result
+
+# Funcion para obtener los posts de un usuario donde el grupo sea privado y el usuario actual pertenezca al grupo privado
+@postRoutes.get('/post/user/{user_id}/private', response_model=List[PostResponse], tags=["Posts"])
+async def get_posts_by_user_id_private(
+    user_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: int = Depends(get_current_user)
+):
+    # Obtener los IDs de los foros privados donde el usuario actual es miembro
+    private_forum_ids = db.query(UserForum.id_forum).filter(
+        UserForum.id_user == current_user.id_user
+    ).subquery()
+
+    # Consulta para obtener posts que cumplan con alguna de estas condiciones:
+    # 1. Posts en foros públicos
+    # 2. Posts en foros privados donde el usuario actual es miembro
+    posts = db.query(ForumPosts).join(
+        Forum, ForumPosts.forum_id == Forum.id_forum
+    ).filter(
+        ForumPosts.user_id == user_id,
+        (
+            (Forum.privacy == "Publico") |  # Posts en foros públicos
+            (
+                (Forum.privacy == "Privado") &  # Posts en foros privados donde el usuario es miembro
+                (Forum.id_forum.in_(private_forum_ids))
+            )
+        )
+    ).all()
+
+    result = []
+    for post in posts:
+        forum = db.query(Forum).filter(Forum.id_forum == post.forum_id).first()
+        user = db.query(User).filter(User.id_user == post.user_id).first()
+        tag = post.tag
+        post_response = PostResponse(
+            id_post=post.id_post,
+            title=post.title,
+            content=post.content,
+            forum_id=post.forum_id,
+            publication_date=post.publication_date,
+            user=user,
+            comment_count=len(post.comments),
+            forum=forum,
+            image_urls=[],
+            tag=tag
+        )
+        result.append(post_response)
+    return result

@@ -34,6 +34,7 @@ class UserResponse(UserBase):
 
 class TokenData(BaseModel):
     id_user : int | None = None
+    grade: int | None = None
     mail: str | None = None
     name: str | None = None
     lastname: str | None = None
