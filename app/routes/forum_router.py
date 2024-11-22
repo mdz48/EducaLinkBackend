@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Form, HTTPException, status, File, UploadFile
 from sqlalchemy.orm import Session
 from typing import List
 from app.models.Forum import Forum, GroupType
@@ -11,19 +11,52 @@ from app.schemas.user_forum_schema import UserForumResponse
 from app.shared.config.db import get_db
 from app.routes.user_router import get_current_user
 from app.shared.middlewares.security import get_password_hash, verify_password
+import boto3
+import os
+from dotenv import load_dotenv
+import time
 
 forumRoutes = APIRouter()
 
+load_dotenv()
+
+s3 = boto3.client(
+    's3',
+    aws_access_key_id=os.getenv("aws_access_key_id"),
+    aws_secret_access_key=os.getenv("aws_secret_access_key"),
+    aws_session_token=os.getenv("aws_session_token"),
+    region_name=os.getenv("AWS_REGION", "us-east-1")
+)
+
 # Crear un nuevo foro
 @forumRoutes.post('/forum/', status_code=status.HTTP_201_CREATED, response_model=ForumResponseWithCreator, tags=["Foros"])
-async def create_forum(forum: ForumCreate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
-    if forum.privacy == GroupType.Privado and not forum.password:
+async def create_forum(
+    name: str = Form(...),
+    description: str = Form(...),
+    privacy: GroupType = Form(...),
+    password: str = Form(None),
+    grade: int = Form(...),
+    education_level: str = Form(...),
+    image: UploadFile = File(None),
+    background_image: UploadFile = File(None),
+    db: Session = Depends(get_db), 
+    current_user: int = Depends(get_current_user)
+):
+    forum = ForumCreate(
+        name=name,
+        description=description,
+        privacy=privacy,
+        password=password,
+        grade=grade,
+        education_level=education_level,
+    )
+    if privacy == GroupType.Privado and not password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La contraseña es obligatoria para foros privados"
         )
-        
-    hashed_password = get_password_hash(forum.password) if forum.password else None
+    
+    hashed_password = get_password_hash(password) if password else None
     db_forum = Forum(
         **forum.model_dump(exclude={'creation_date', 'user_name', 'password'}),
         creation_date=datetime.now(),
@@ -31,9 +64,26 @@ async def create_forum(forum: ForumCreate, db: Session = Depends(get_db), curren
         id_user=current_user.id_user,
         password=hashed_password
     )
+    
+    # if db_forum.background_image_url is None:
+    #     db_forum.background_image_url = "https://educalinkbucket.s3.us-east-1.amazonaws.com/default_portrait_white.png"
+    # if db_forum.image_url is None:
+    #     db_forum.image_url = "https://educalinkbucket.s3.us-east-1.amazonaws.com/default_user.png"
         
-    if db.query(Forum).filter(Forum.name == forum.name).first():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El nombre del foro ya existe")
+    # Si se ingresaron imagenes entonces subirlas a S3
+    if image:
+        file_key = f"{int(time.time())}_{image.filename}"
+        s3.upload_fileobj(image.file, 'educalinkbucket', file_key, ExtraArgs={'ContentType': image.content_type})
+        db_forum.image_url = f"https://educalinkbucket.s3.us-east-1.amazonaws.com/{file_key}"
+    else:
+        db_forum.image_url = "https://educalinkbucket.s3.us-east-1.amazonaws.com/default_user.png"
+    if background_image:
+        file_key = f"{int(time.time())}_{background_image.filename}"
+        s3.upload_fileobj(background_image.file, 'educalinkbucket', file_key, ExtraArgs={'ContentType': background_image.content_type})
+        db_forum.background_image_url = f"https://educalinkbucket.s3.us-east-1.amazonaws.com/{file_key}"
+    else:
+        db_forum.background_image_url = "https://educalinkbucket.s3.us-east-1.amazonaws.com/default_portrait_white.png"
+        
     db_forum.creator = current_user
     db.add(db_forum)
     db.commit()
@@ -189,6 +239,7 @@ async def get_forums_by_user(user_id: int, db: Session = Depends(get_db)):
         forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
         forum.users = db.query(User).join(UserForum, User.id_user == UserForum.id_user).filter(UserForum.id_forum == forum.id_forum).all()
         forum.creator = db.query(User).filter(User.id_user == forum.id_user).first() 
+    forums.sort(key=lambda x: x.users_count, reverse=True)
     return forums
 
 # Filtrar foros por grade

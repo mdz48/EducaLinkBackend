@@ -2,6 +2,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List
+from app.models.interfaces import PostStatus
 from app.models.sale_post import SalePost
 from app.schemas.sale_post_schema import SalePostCreate, SalePostResponse
 from app.shared.config.db import get_db
@@ -136,3 +137,21 @@ async def get_sale_post_by_type(sale_type: str, db: Session = Depends(get_db)):
         )
         for sale_post in sale_posts
     ]
+
+
+# Obtener posts de venta por el usuario que lo vende
+@salePostRoutes.get('/sale-post/user/{user_id}', response_model=List[SalePostResponse], tags=["Posts de venta"])
+async def get_sale_post_by_user_available(user_id: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+    sale_posts = db.query(SalePost).filter(SalePost.seller_id == user_id, SalePost.status == 'Disponible').all()
+    
+    return sale_posts
+
+# Cambiar el estado de un post de venta
+@salePostRoutes.put('/sale-post/{id_sale_post}/status', response_model=SalePostResponse, tags=["Posts de venta"])
+async def change_sale_post_status(id_sale_post: int, status: PostStatus, db: Session = Depends(get_db)):
+    db_sale_post = db.query(SalePost).filter(SalePost.id_sale_post == id_sale_post).first()
+    if not db_sale_post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sale post not found")
+    db_sale_post.status = status
+    db.commit()
+    return db_sale_post

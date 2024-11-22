@@ -25,11 +25,12 @@ class FileType(enum.Enum):
     
 class SaleType(enum.Enum):
     Material_didactico = "Material didactico"
-    Recursos_de_clases = "Recursos de clases"
+    Recursos_de_clase = "Recursos de clase"
     Libros = "Libros"
-    Jueguetes = "Jueguetes"
+    Juguetes = "Juguetes"
     Mobiliario = "Mobiliario"
     Decoracion = "Decoracion"
-    Electronica = "Electronica"
-    Otros = "Otros"
+    Electronica = "Electronica" 
+    Uniformes = "Uniformes"
+    Otros = "Otros" 
     
