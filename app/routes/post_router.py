@@ -376,3 +376,27 @@ async def get_posts_by_user_id_private(
         )
         result.append(post_response)
     return result
+
+# Funcion para obtener posts por un nombre parecido
+@postRoutes.get('/post/search/{name}', status_code=status.HTTP_200_OK, response_model=List[PostResponse], tags=["Posts"])
+async def get_posts_by_name(name: str, db: Session = Depends(get_db)):
+    posts = db.query(ForumPosts).filter(ForumPosts.title.ilike(f"%{name}%")).all()
+    result = []
+    for post in posts:
+        forum = db.query(Forum).filter(Forum.id_forum == post.forum_id).first()
+        user = db.query(User).filter(User.id_user == post.user_id).first()
+        tag = post.tag
+        post_response = PostResponse(
+            id_post=post.id_post,
+            title=post.title,
+            content=post.content,
+            publication_date=post.publication_date,
+            forum_id=post.forum_id,
+            user=user,
+            comment_count=len(post.comments),
+            forum=forum,
+            image_urls=[],
+            tag=tag
+        )
+        result.append(post_response)
+    return result 

@@ -155,3 +155,9 @@ async def change_sale_post_status(id_sale_post: int, status: PostStatus, db: Ses
     db_sale_post.status = status
     db.commit()
     return db_sale_post
+
+# Funcion para obtener posts de venta por un nombre parecido
+@salePostRoutes.get('/sale-post/search/{name}', status_code=status.HTTP_200_OK, response_model=List[SalePostResponse], tags=["Posts de venta"])
+async def get_sale_posts_by_name(name: str, db: Session = Depends(get_db)):
+    sale_posts = db.query(SalePost).filter(SalePost.title.ilike(f"%{name}%")).all()
+    return sale_posts

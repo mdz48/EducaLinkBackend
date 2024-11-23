@@ -33,4 +33,8 @@ class SaleType(enum.Enum):
     Electronica = "Electronica" 
     Uniformes = "Uniformes"
     Otros = "Otros" 
-    
+
+class UserType(enum.Enum):
+    User = "User"
+    Admin = "Admin"
+

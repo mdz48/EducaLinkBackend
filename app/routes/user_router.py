@@ -287,3 +287,9 @@ async def search_user(name: str, lastname: str = None, db: Session = Depends(get
     users = query.all()
     return users
  
+ # Funcion para obtener usuarios por un nombre parecido
+@userRoutes.get('/user/search/{name}', status_code=status.HTTP_200_OK, response_model=List[UserResponse], tags=["Usuarios"])
+async def get_users_by_name(name: str, db: Session = Depends(get_db)):
+    users = db.query(User).filter(User.name.ilike(f"%{name}%")).all()
+    return users
+

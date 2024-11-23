@@ -2,8 +2,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:1234@localhost/educalink"
-#SQLALCHEMY_DATABASE_URL = "postgresql://postgres:postgres@database-1.cpo8mtxvyoqv.us-east-1.rds.amazonaws.com/educalink"
+# SQLALCHEMY_DATABASE_URL = "postgresql://postgres:1234@localhost/educalink" educalink.cpo8mtxvyoqv.us-east-1.rds.amazonaws.com
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres:postgres@educalink.cpo8mtxvyoqv.us-east-1.rds.amazonaws.com/educalink"
 
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
