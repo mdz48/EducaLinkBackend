@@ -17,3 +17,16 @@ class MessageResponse(MessageBase):
     id_message: int
     sender: UserResponse
     date_message: datetime
+    
+class SaleMessageBase(BaseModel):
+    message: str
+    sale_chat_id: int
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SaleMessageResponse(SaleMessageBase):
+    id_sale_message: int
+    sender: UserResponse
+    date_message: datetime
+
