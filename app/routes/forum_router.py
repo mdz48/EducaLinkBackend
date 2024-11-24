@@ -173,11 +173,17 @@ async def update_forum(
     if education_level is not None:
         db_forum.education_level = education_level
     if image:
-        # Lógica para manejar la carga de la imagen
-        pass  # Aquí debes agregar la lógica para subir la imagen a S3
+        file_key = f"{int(time.time())}_{image.filename}"
+        s3.upload_fileobj(image.file, 'educalinkbucket', file_key, ExtraArgs={'ContentType': image.content_type})
+        db_forum.image_url = f"https://educalinkbucket.s3.us-east-1.amazonaws.com/{file_key}"
+    else:
+        db_forum.image_url = db_forum.image_url
     if background_image:
-        # Lógica para manejar la carga de la imagen de fondo
-        pass  # Aquí debes agregar la lógica para subir la imagen a S3
+        file_key = f"{int(time.time())}_{background_image.filename}"
+        s3.upload_fileobj(background_image.file, 'educalinkbucket', file_key, ExtraArgs={'ContentType': background_image.content_type})
+        db_forum.background_image_url = f"https://educalinkbucket.s3.us-east-1.amazonaws.com/{file_key}"
+    else:
+        db_forum.background_image_url = db_forum.background_image_url
     
     db.commit()
     db.refresh(db_forum)
