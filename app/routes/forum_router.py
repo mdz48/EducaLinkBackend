@@ -141,9 +141,7 @@ async def update_forum(
     forum_id: int, 
     name: str | None = Form(None),  # Cambiado a opcional
     description: str | None = Form(None),  # Cambiado a opcional
-    privacy: GroupType | None = Form(None),  # Cambiado a opcional
     password: str | None = Form(None),  # Cambiado a opcional
-    grade: int | None = Form(None),  # Cambiado a opcional
     education_level: str | None = Form(None),  # Cambiado a opcional
     image: UploadFile | None = File(None),  # Cambiado a opcional
     background_image: UploadFile | None = File(None),  # Cambiado a opcional
@@ -154,22 +152,16 @@ async def update_forum(
     if not db_forum:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
     
-    # Verificar si se requiere contraseña para foros privados
-    if privacy == GroupType.Privado and not password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La contraseña es obligatoria para foros privados"
-        )
+    # La privacidad no se puede cambiar
+    privacy = db_forum.privacy
     
     # Actualizar solo los campos que se proporcionan
     if name is not None:
         db_forum.name = name
     if description is not None:
         db_forum.description = description
-    if privacy is not None:
-        db_forum.privacy = privacy
-    if grade is not None:
-        db_forum.grade = grade
+    if password is not None and privacy == GroupType.Privado:
+        db_forum.password = get_password_hash(password)
     if education_level is not None:
         db_forum.education_level = education_level
     if image:
@@ -184,7 +176,7 @@ async def update_forum(
         db_forum.background_image_url = f"https://educalinkbucket.s3.us-east-1.amazonaws.com/{file_key}"
     else:
         db_forum.background_image_url = db_forum.background_image_url
-    
+    db_forum.privacy = privacy
     db.commit()
     db.refresh(db_forum)
 
