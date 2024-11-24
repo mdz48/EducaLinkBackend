@@ -37,8 +37,8 @@ s3 = boto3.client(
     region_name=os.getenv("AWS_REGION", "us-east-1")
 )
 
-print("AWS_ACCESS_KEY_ID:", os.getenv("AWS_ACCESS_KEY_ID"))
-print("AWS_SECRET_ACCESS_KEY:", os.getenv("AWS_SECRET_ACCESS_KEY"))
+print("AWS_ACCESS_KEY_ID:", os.getenv("aws_access_key_id"))
+print("AWS_SECRET_ACCESS_KEY:", os.getenv("aws_secret_access_key"))
 print("AWS_SESSION_TOKEN:", os.getenv("aws_session_token"))
 print("AWS_REGION:", os.getenv("AWS_REGION"))
 

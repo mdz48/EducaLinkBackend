@@ -2,8 +2,9 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+from app.models.User import User
 from app.models.comment import Comment
-from app.schemas.comment_schema import CommentCreate, CommentResponse
+from app.schemas.comment_schema import CommentCreate, CommentResponse, CommentResponseWithUser
 from app.shared.config.db import get_db
 from app.routes.user_router import get_current_user
 
@@ -56,7 +57,10 @@ async def delete_comment(id_comment: int, db: Session = Depends(get_db)):
     db.commit()
     
 # Obtener comentarios por ID de post
-@commentRoutes.get('/comments/post/{post_id}', response_model=List[CommentResponse], tags=["Comentarios"])
+@commentRoutes.get('/comments/post/{post_id}', response_model=List[CommentResponseWithUser], tags=["Comentarios"])
 async def get_comments_by_post_id(post_id: int, db: Session = Depends(get_db)):
     comments = db.query(Comment).filter(Comment.post_id == post_id).all()
+    for comment in comments:
+        user = db.query(User).filter(User.id_user == comment.user_id).first()
+        comment.user = user
     return comments
