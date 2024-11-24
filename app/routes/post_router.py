@@ -130,6 +130,7 @@ async def get_post_by_id(id_post: int, db: Session = Depends(get_db)):
     file_urls = db.query(Files).filter(Files.post_id == id_post).all()
     urls = [file.url for file in file_urls]
     tag = post.tag
+    forum = db.query(Forum).filter(Forum.id_forum == post.forum_id).first()
     post_response = PostResponse(
         id_post=post.id_post,
         title=post.title,
@@ -138,6 +139,7 @@ async def get_post_by_id(id_post: int, db: Session = Depends(get_db)):
         forum_id=post.forum_id,
         user=post.user,
         comment_count=len(post.comments),
+        forum=forum,
         image_urls=urls,  # Incluir las URLs de las imágenes
         tag=tag
     )

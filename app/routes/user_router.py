@@ -25,10 +25,25 @@ from app.shared.middlewares.security import (
 )
 import boto3
 import time
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+s3 = boto3.client(
+    's3',
+    aws_access_key_id=os.getenv("aws_access_key_id"),
+    aws_secret_access_key=os.getenv("aws_secret_access_key"),
+    aws_session_token=os.getenv("aws_session_token"),
+    region_name=os.getenv("AWS_REGION", "us-east-1")
+)
+
+print("AWS_ACCESS_KEY_ID:", os.getenv("AWS_ACCESS_KEY_ID"))
+print("AWS_SECRET_ACCESS_KEY:", os.getenv("AWS_SECRET_ACCESS_KEY"))
+print("AWS_SESSION_TOKEN:", os.getenv("aws_session_token"))
+print("AWS_REGION:", os.getenv("AWS_REGION"))
 
 userRoutes = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-s3 = boto3.client('s3')
 
 # Endpoint de login
 @userRoutes.post("/token", response_model=Token, tags=["Usuarios"])
@@ -247,7 +262,7 @@ async def update_user(
 
     if profile_image:
         file_key = f"{int(time.time())}_{profile_image.filename}"
-        s3.upload_fileobj(profile_image.file, 'educalinkbucket', file_key, ExtraArgs={'ContentType': background_image.content_type})
+        s3.upload_fileobj(profile_image.file, 'educalinkbucket', file_key, ExtraArgs={'ContentType': profile_image.content_type})
         db_user.profile_image_url = f"https://educalinkbucket.s3.amazonaws.com/{file_key}"
 
     db.commit()
