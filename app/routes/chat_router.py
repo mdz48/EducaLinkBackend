@@ -4,10 +4,11 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.models.User import User
 from app.models.chat import Chat
-from app.schemas.chat_schema import ChatCreate, ChatResponse
+from app.schemas.chat_schema import ChatCreate, ChatResponse, SaleChatResponse
 from app.schemas.user_schema import UserResponse
 from app.shared.config.db import get_db
 from app.routes.user_router import get_current_user
+from app.models.sale_schat import SaleChat
 
 chatRoutes = APIRouter()
 
@@ -84,3 +85,44 @@ async def get_chats_by_user(id_user: int, db: Session = Depends(get_db), current
         chat_response = ChatResponse(id_chat=chat.id_chat, sender=sender, receiver=receiver)
         result.append(chat_response)
     return result
+
+
+# SECCION DE SALE CHAT
+
+# Crear un nuevo chat de venta
+@chatRoutes.post('/sale_chat/{seller_id}', status_code=status.HTTP_201_CREATED, response_model=SaleChatResponse, tags=["Sale Chat"])
+async def create_sale_chat(seller_id: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+    db_sale_chat = SaleChat(seller_id=seller_id, buyer_id=current_user.id_user)
+    if db.query(SaleChat).filter(SaleChat.seller_id == current_user.id_user, SaleChat.buyer_id == seller_id).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Este chat de venta ya existe")
+    if db.query(SaleChat).filter(SaleChat.buyer_id == current_user.id_user, SaleChat.seller_id == seller_id).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Este chat de venta ya existe")
+    if seller_id == current_user.id_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No puedes iniciar un chat de venta contigo mismo")
+    db.add(db_sale_chat)
+    db.commit()
+    return SaleChatResponse(id_sale_chat=db_sale_chat.id_sale_chat, seller=UserResponse.from_orm(db.query(User).filter(User.id_user == db_sale_chat.seller_id).first()), buyer=UserResponse.from_orm(db.query(User).filter(User.id_user == db_sale_chat.buyer_id).first()))
+
+# Obtener todos los chats de venta de un usuario
+@chatRoutes.get('/sale_chat/user/{id_user}', response_model=List[SaleChatResponse], tags=["Sale Chat"])
+async def get_sale_chats_by_user(id_user: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+    sale_chats = db.query(SaleChat).filter((SaleChat.seller_id == id_user) | (SaleChat.buyer_id == id_user)).all()
+    return [SaleChatResponse(id_sale_chat=sale_chat.id_sale_chat, seller=UserResponse.from_orm(db.query(User).filter(User.id_user == sale_chat.seller_id).first()), buyer=UserResponse.from_orm(db.query(User).filter(User.id_user == sale_chat.buyer_id).first())) for sale_chat in sale_chats]
+
+# Obtener un chat de venta por ID
+@chatRoutes.get('/sale_chat/{id_sale_chat}', response_model=SaleChatResponse, tags=["Sale Chat"])
+async def get_sale_chat_by_id(id_sale_chat: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+    sale_chat = db.query(SaleChat).filter(SaleChat.id_sale_chat == id_sale_chat).first()
+    if not sale_chat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sale chat not found")
+    return SaleChatResponse(id_sale_chat=sale_chat.id_sale_chat, seller=UserResponse.from_orm(db.query(User).filter(User.id_user == sale_chat.seller_id).first()), buyer=UserResponse.from_orm(db.query(User).filter(User.id_user == sale_chat.buyer_id).first()))
+
+# Eliminar un chat de venta por ID
+@chatRoutes.delete('/sale_chat/{id_sale_chat}', status_code=status.HTTP_204_NO_CONTENT, tags=["Sale Chat"])
+async def delete_sale_chat(id_sale_chat: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+    db_sale_chat = db.query(SaleChat).filter(SaleChat.id_sale_chat == id_sale_chat).first()
+    if not db_sale_chat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sale chat not found")
+    db.delete(db_sale_chat)
+    db.commit()
+

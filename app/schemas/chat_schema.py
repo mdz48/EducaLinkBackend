@@ -17,3 +17,9 @@ class ChatResponse(BaseModel):
     
     model_config = ConfigDict(from_attributes=True)
 
+class SaleChatResponse(BaseModel):
+    seller: UserResponse
+    buyer: UserResponse
+    id_sale_chat: int
+    
+    model_config = ConfigDict(from_attributes=True)

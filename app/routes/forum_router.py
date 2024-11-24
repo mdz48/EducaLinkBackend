@@ -137,22 +137,54 @@ async def get_forum_by_name(name: str, db: Session = Depends(get_db)):
 
 # Actualizar un foro
 @forumRoutes.put('/forum/{forum_id}', response_model=ForumResponseWithCreator, tags=["Foros"])
-async def update_forum(forum_id: int, forum: ForumCreate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+async def update_forum(
+    forum_id: int, 
+    name: str | None = Form(None),  # Cambiado a opcional
+    description: str | None = Form(None),  # Cambiado a opcional
+    privacy: GroupType | None = Form(None),  # Cambiado a opcional
+    password: str | None = Form(None),  # Cambiado a opcional
+    grade: int | None = Form(None),  # Cambiado a opcional
+    education_level: str | None = Form(None),  # Cambiado a opcional
+    image: UploadFile | None = File(None),  # Cambiado a opcional
+    background_image: UploadFile | None = File(None),  # Cambiado a opcional
+    db: Session = Depends(get_db), 
+    current_user: int = Depends(get_current_user)
+):
     db_forum = db.query(Forum).filter(Forum.id_forum == forum_id).first()
     if not db_forum:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foro no encontrado")
     
-    if forum.privacy == GroupType.Privado and not forum.password:
+    # Verificar si se requiere contraseña para foros privados
+    if privacy == GroupType.Privado and not password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La contraseña es obligatoria para foros privados"
         )
     
-    for key, value in forum.model_dump(exclude={'creation_date'}).items():
-        setattr(db_forum, key, value)
+    # Actualizar solo los campos que se proporcionan
+    if name is not None:
+        db_forum.name = name
+    if description is not None:
+        db_forum.description = description
+    if privacy is not None:
+        db_forum.privacy = privacy
+    if grade is not None:
+        db_forum.grade = grade
+    if education_level is not None:
+        db_forum.education_level = education_level
+    if image:
+        # Lógica para manejar la carga de la imagen
+        pass  # Aquí debes agregar la lógica para subir la imagen a S3
+    if background_image:
+        # Lógica para manejar la carga de la imagen de fondo
+        pass  # Aquí debes agregar la lógica para subir la imagen a S3
     
     db.commit()
     db.refresh(db_forum)
+
+    # Agregar el creador a la respuesta
+    db_forum.creator = db.query(User).filter(User.id_user == db_forum.id_user).first()
+
     return db_forum
 
 # Eliminar un foro
