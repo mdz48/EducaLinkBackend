@@ -143,6 +143,7 @@ async def update_forum(
     description: str | None = Form(None),  # Cambiado a opcional
     password: str | None = Form(None),  # Cambiado a opcional
     education_level: str | None = Form(None),  # Cambiado a opcional
+    grade: int | None = Form(None),  # Cambiado a opcional
     image: UploadFile | None = File(None),  # Cambiado a opcional
     background_image: UploadFile | None = File(None),  # Cambiado a opcional
     db: Session = Depends(get_db), 
@@ -164,6 +165,8 @@ async def update_forum(
         db_forum.password = get_password_hash(password)
     if education_level is not None:
         db_forum.education_level = education_level
+    if grade is not None:
+        db_forum.grade = grade
     if image:
         file_key = f"{int(time.time())}_{image.filename}"
         s3.upload_fileobj(image.file, 'educalinkbucket', file_key, ExtraArgs={'ContentType': image.content_type})

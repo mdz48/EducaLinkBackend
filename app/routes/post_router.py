@@ -66,7 +66,9 @@ async def create_post(
             # Guardar la URL en la tabla post_files
             db_file = Files(post_id=db_post.id_post, url=file_url)
             db.add(db_file)
-            
+            # Verificar si hubo un error al subir el archivo
+            if not db_file:
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al subir el archivo")
             
     db.commit()  # Asegúrate de hacer commit después de agregar los archivos
     forum = db.query(Forum).filter(Forum.id_forum == forum_id).first()
