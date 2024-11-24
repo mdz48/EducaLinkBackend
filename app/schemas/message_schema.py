@@ -1,6 +1,8 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.user_schema import UserResponse
+
 class MessageBase(BaseModel):
     message: str
     chat_id: int
@@ -13,5 +15,5 @@ class MessageCreate(MessageBase):
 
 class MessageResponse(MessageBase):
     id_message: int
-    sender_id : int
+    sender: UserResponse
     date_message: datetime

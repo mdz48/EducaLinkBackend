@@ -76,7 +76,7 @@ async def create_forum(
         s3.upload_fileobj(image.file, 'educalinkbucket', file_key, ExtraArgs={'ContentType': image.content_type})
         db_forum.image_url = f"https://educalinkbucket.s3.us-east-1.amazonaws.com/{file_key}"
     else:
-        db_forum.image_url = "https://educalinkbucket.s3.us-east-1.amazonaws.com/default_user.png"
+        db_forum.image_url = "https://educalinkbucket.s3.us-east-1.amazonaws.com/default_group.png"
     if background_image:
         file_key = f"{int(time.time())}_{background_image.filename}"
         s3.upload_fileobj(background_image.file, 'educalinkbucket', file_key, ExtraArgs={'ContentType': background_image.content_type})

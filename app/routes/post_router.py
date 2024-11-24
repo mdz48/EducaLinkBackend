@@ -27,6 +27,8 @@ s3 = boto3.client(
     region_name=os.getenv("AWS_REGION", "us-east-1")
 )
 
+
+
 postRoutes = APIRouter()
 
 # Crear un nuevo post
@@ -193,6 +195,30 @@ async def get_posts_by_forum_id(forum_id: int, db: Session = Depends(get_db)):
         result.append(post_response)
     return result
 
+# Obtener post por ID de foro excluyendo los posts del usuario actual
+@postRoutes.get('/post/forum/{forum_id}/exclude/{user_id}', response_model=List[PostResponse], tags=["Posts"])
+async def get_posts_by_forum_id_exclude_user(forum_id: int, user_id: int, db: Session = Depends(get_db)):
+    posts = db.query(ForumPosts).filter(ForumPosts.forum_id == forum_id, ForumPosts.user_id != user_id).all()
+    result = []
+    for post in posts:
+        file_urls = db.query(Files).filter(Files.post_id == post.id_post).all()
+        urls = [file.url for file in file_urls]
+        forum = db.query(Forum).filter(Forum.id_forum == post.forum_id).first()
+        tag = post.tag
+        post_response = PostResponse(
+            id_post=post.id_post,
+            title=post.title,
+            content=post.content,
+            publication_date=post.publication_date,
+            forum_id=post.forum_id,
+            user=post.user,
+            comment_count=len(post.comments),
+            forum=forum,
+            image_urls=urls,
+            tag=tag
+        )
+        result.append(post_response)
+    return result
 
 @postRoutes.get('/post/', response_model=List[PostResponse], tags=["Posts"])
 async def get_posts(db: Session = Depends(get_db)):
@@ -230,6 +256,7 @@ async def get_posts(db: Session = Depends(get_db)):
 @postRoutes.get('/post/user/{user_id}', response_model=List[PostResponse], tags=["Posts"])
 async def get_post_by_user_id(user_id: int, db: Session = Depends(get_db)):
     posts = db.query(ForumPosts).options(joinedload(ForumPosts.user)).filter(ForumPosts.user_id == user_id).all()
+    
     result = []
     for post in posts:
         forum = db.query(Forum).filter(Forum.id_forum == post.forum_id).first()  # Obtener el foro
