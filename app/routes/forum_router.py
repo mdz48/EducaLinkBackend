@@ -321,7 +321,7 @@ async def get_forums_by_user_not_in(user_id: int, db: Session = Depends(get_db))
     return forums
 
 # Funcion para obtener los foros por un nombre parecido
-@forumRoutes.get('/forum/search/{name}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse], tags=["Foros"])
+@forumRoutes.get('/forum/search/{name}', status_code=status.HTTP_200_OK, response_model=List[ForumResponseWithCreator], tags=["Foros"])
 async def get_forums_by_name(name: str, db: Session = Depends(get_db)):
     forums = db.query(Forum).filter(Forum.name.ilike(f"%{name}%")).all()
     for forum in forums:
