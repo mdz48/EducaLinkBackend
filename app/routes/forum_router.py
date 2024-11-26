@@ -265,12 +265,12 @@ async def leave_forum(user_id: int, forum_id: int, db: Session = Depends(get_db)
     return
 
 # Funcion para obtener todos los foros de un usuario (duplicado en user_router, lo quiero ordenar x2)
-@forumRoutes.get('/forum/user/{user_id}', status_code=status.HTTP_200_OK, response_model=List[ForumResponse], tags=["Foros"])
+@forumRoutes.get('/forum/user/{user_id}', status_code=status.HTTP_200_OK, response_model=List[ForumResponseWithCreator], tags=["Foros"])
 async def get_forums_by_user(user_id: int, db: Session = Depends(get_db)):
     forums = db.query(Forum).join(UserForum, Forum.id_forum == UserForum.id_forum).filter(UserForum.id_user == user_id).all()
     for forum in forums:
         forum.users_count = db.query(UserForum).filter(UserForum.id_forum == forum.id_forum).count()
-        forum.users = db.query(User).join(UserForum, User.id_user == UserForum.id_user).filter(UserForum.id_forum == forum.id_forum).all()
+        # forum.users = db.query(User).join(UserForum, User.id_user == UserForum.id_user).filter(UserForum.id_forum == forum.id_forum).all()
         forum.creator = db.query(User).filter(User.id_user == forum.id_user).first() 
     forums.sort(key=lambda x: x.users_count, reverse=True)
     return forums
