@@ -64,3 +64,14 @@ async def get_all_ads(db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No hay publicidades registradas")
     return ads
 
+
+# Eliminar una publicidad
+@adsRoutes.delete('/ads/{id_ad}', status_code=status.HTTP_204_NO_CONTENT, tags=["Publicidades"])
+async def delete_ads(id_ad: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    ads = db.query(Ads).filter(Ads.id_ad == id_ad).first()
+    if not ads:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publicidad no encontrada")
+    if current_user.user_type != "Admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permisos para eliminar publicidades")
+    db.delete(ads)
+    db.commit()
