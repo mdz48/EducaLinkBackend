@@ -15,7 +15,6 @@ from app.routes.sale_post_router import salePostRoutes
 from app.routes.chat_router import chatRoutes
 from app.routes.message_router import messageRoutes
 from app.routes.ads_router import adsRoutes
-from app.routes.company_router import companyRoutes
 app = FastAPI()
 
 app.include_router(userRoutes)
@@ -27,7 +26,6 @@ app.include_router(salePostRoutes)
 app.include_router(chatRoutes)
 app.include_router(messageRoutes)
 app.include_router(adsRoutes)
-app.include_router(companyRoutes)
 app.include_router(uploadRoutes)
 origins = [
     "http://localhost",

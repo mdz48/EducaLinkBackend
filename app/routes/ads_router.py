@@ -3,8 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 from app.models.User import User
-from app.models.ads import Ads, Company
-from app.models.files_model import Files
+from app.models.ads import Ads
 from app.schemas.ads_schema import AdsResponse
 from app.shared.config.db import get_db
 from app.routes.user_router import get_current_user
@@ -35,7 +34,6 @@ async def create_ads(
     description: str = Form(...),
     image: UploadFile = File(...),
     link: str = Form(...),
-    company_id: int = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -43,12 +41,7 @@ async def create_ads(
 # Verificamos que el usuario sea de tipo Admin
     if current_user.user_type != "Admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permisos para crear publicidades")
-    
-    # Verificamos que el company_id exista
-    company = db.query(Company).filter(Company.id_company == company_id).first()
-    if not company:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La empresa no existe")
-    
+
     # Subimos la imagen a S3
     file_key = f"{int(time.time())}_{image.filename}"
     s3.upload_fileobj(image.file, 'educalinkbucket', file_key, ExtraArgs={'ContentType': image.content_type})
@@ -57,7 +50,7 @@ async def create_ads(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al subir la imagen a S3")
     
     # Creamos la publicidad
-    new_ads = Ads(title=title, description=description, image_url=image_url, link=link, company_id=company_id, created_at=datetime.now())
+    new_ads = Ads(title=title, description=description, image_url=image_url, link=link, created_at=datetime.now())
     db.add(new_ads)
     db.commit()
     db.refresh(new_ads)
@@ -66,8 +59,8 @@ async def create_ads(
 # Obtener todas las publicidades
 @adsRoutes.get('/ads/', response_model=List[AdsResponse], tags=["Publicidades"])
 async def get_all_ads(db: Session = Depends(get_db)):
-    ads = db.query(Ads).options(joinedload(Ads.company)).all()
+    ads = db.query(Ads).all()
     if not ads:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No hay publicidades")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No hay publicidades registradas")
     return ads
 

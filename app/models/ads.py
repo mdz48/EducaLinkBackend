@@ -11,13 +11,4 @@ class Ads(Base):
     description = Column(Text, nullable=False)
     image_url = Column(String(255), nullable=False)
     link = Column(String(255), nullable=False)
-    company_id = Column(Integer, ForeignKey("company.id_company", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     created_at = Column(DateTime, nullable=True)
-    company = relationship("Company", backref="ads")
-
-class Company(Base):
-    __tablename__ = "company"
-    id_company = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), nullable=False)
-    image_url = Column(String(255), nullable=False)
-    link = Column(String(255), nullable=False) 
