@@ -37,11 +37,6 @@ s3 = boto3.client(
     region_name=os.getenv("AWS_REGION", "us-east-1")
 )
 
-print("AWS_ACCESS_KEY_ID:", os.getenv("aws_access_key_id"))
-print("AWS_SECRET_ACCESS_KEY:", os.getenv("aws_secret_access_key"))
-print("AWS_SESSION_TOKEN:", os.getenv("aws_session_token"))
-print("AWS_REGION:", os.getenv("AWS_REGION"))
-
 userRoutes = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -308,3 +303,17 @@ async def get_users_by_name(name: str, db: Session = Depends(get_db)):
     users = db.query(User).filter(User.name.ilike(f"%{name}%")).all()
     return users
 
+# Funcion para actualizar el estado de un usuario
+@userRoutes.put('/user/update_state/{id_user}', status_code=status.HTTP_200_OK, response_model=UserResponse, tags=["Usuarios"])
+async def update_user_state(id_user: int, state: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    print(state)
+    print(current_user.user_type)
+    user = db.query(User).filter(User.id_user == id_user).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    if current_user.user_type != "Admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permisos para actualizar el estado de un usuario")
+    user.state = state
+    db.commit()
+    db.refresh(user)
+    return user
